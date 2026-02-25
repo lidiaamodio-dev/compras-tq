@@ -1082,9 +1082,8 @@ function App(){
             </div>
           </>
         )}
-      </main>
-
         </>}
+      </main>
       {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos}/>}
       {showLogin &&<LoginModal onClose={()=>setShowLogin(false)} onSuccess={()=>{setIsAdmin(true);setShowLogin(false);}}/>}
       {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder}/>}
