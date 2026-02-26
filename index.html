@@ -806,7 +806,7 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,proveedores=[]}){
+function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,proveedores=[]}){
   const [dashTab,setDashTab]=useState("gasto");
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
@@ -859,7 +859,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,provee
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} proveedores={proveedores}/>
+        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} proveedores={proveedores}/>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -1076,10 +1076,93 @@ function SplitOrderModal({orders, proveedorName, proyectos, onClose, onSplit}){
   );
 }
 
+/* ── MERGE BLOCKS MODAL ── */
+function MergeBlocksModal({proveedorName, bloques, onClose, onMerge}){
+  // bloques: array of pvList entries {key, bloqueLabel, orders, total}
+  const [selected, setSelected] = useState(
+    // pre-select all by default
+    Object.fromEntries(bloques.map(b=>[b.key, true]))
+  );
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key) => setSelected(prev=>({...prev,[key]:!prev[key]}));
+  const selectedBloques = bloques.filter(b=>selected[b.key]);
+  const canMerge = selectedBloques.length >= 2;
+  const totalSelected = selectedBloques.reduce((s,b)=>s+b.total,0);
+  const totalItems = selectedBloques.reduce((s,b)=>s+b.orders.reduce((ss,o)=>ss+o.products.length,0),0);
+
+  const handleMerge = async()=>{
+    if(!canMerge) return;
+    setSaving(true);
+    await onMerge(proveedorName, selectedBloques.flatMap(b=>b.orders));
+    setSaving(false);
+    onClose();
+  };
+
+  return(
+    <div className="split-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="split-modal" style={{maxWidth:480}}>
+        <div className="split-head">
+          <h3>🔗 Unir bloques — 🏪 {proveedorName}</h3>
+          <p>Selecciona los bloques que quieres fusionar en uno solo. Los no seleccionados quedan intactos.</p>
+        </div>
+        <div style={{padding:"1rem 1.5rem",display:"flex",flexDirection:"column",gap:8}}>
+          {bloques.map(b=>{
+            const isSel = selected[b.key];
+            const nItems = b.orders.reduce((s,o)=>s+o.products.length,0);
+            const proyecto = b.orders[0]?.proyecto;
+            return(
+              <div key={b.key}
+                onClick={()=>toggle(b.key)}
+                style={{display:"flex",alignItems:"center",gap:12,padding:".75rem 1rem",borderRadius:12,border:`1.5px solid ${isSel?"#f59e0b":"var(--border)"}`,background:isSel?"#fffbeb":"white",cursor:"pointer",transition:"all .13s",userSelect:"none"}}
+              >
+                <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${isSel?"#f59e0b":"var(--border)"}`,background:isSel?"#f59e0b":"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0,transition:"all .13s"}}>
+                  {isSel&&"✓"}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:".88rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:6}}>
+                    ✂️ {b.bloqueLabel}
+                    {proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",fontSize:".68rem",fontWeight:800,padding:"2px 8px",borderRadius:20}}>📁 {proyecto}</span>}
+                  </div>
+                  <div style={{fontSize:".72rem",color:"var(--muted)",fontWeight:600,marginTop:2}}>
+                    {nItems} artículo{nItems!==1?"s":""}
+                    {b.orders[0]?.responsable && " · "+b.orders[0].responsable}
+                  </div>
+                </div>
+                <div style={{fontWeight:900,fontSize:".9rem",color:isSel?"#d97706":"var(--muted)",letterSpacing:"-.3px"}}>
+                  {eur(b.total)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{padding:".75rem 1.5rem",background:"var(--bg)",borderTop:"1.5px solid var(--border)",borderBottom:"1.5px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:".78rem",fontWeight:700,color:"var(--muted)"}}>
+            {canMerge
+              ? `✅ ${selectedBloques.length} bloques · ${totalItems} artículos · ${eur(totalSelected)}`
+              : "⚠️ Selecciona al menos 2 bloques"}
+          </span>
+          {canMerge&&<span style={{fontSize:".72rem",color:"#92400e",fontWeight:700,background:"#fef9c3",padding:"3px 9px",borderRadius:20,border:"1px solid #fde68a"}}>⚠️ Se quitará el proyecto asignado</span>}
+        </div>
+        <div className="split-foot">
+          <button className="btn-sec" onClick={onClose}>Cancelar</button>
+          <button
+            className="btn-primary"
+            style={{opacity:canMerge?1:.5,cursor:canMerge?"pointer":"not-allowed",background:"linear-gradient(135deg,#fbbf24,#f59e0b)",boxShadow:"0 2px 8px rgba(245,158,11,.4)"}}
+            onClick={handleMerge}
+            disabled={!canMerge||saving}
+          >{saving?"Fusionando…":"🔗 Unir seleccionados"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,proveedores=[]}){
-  const [splitProv, setSplitProv] = useState(null); // {name, orders}
-  // group by bloque (if set) or proveedor — so split blocks appear separately
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,proveedores=[]}){
+  const [splitProv, setSplitProv] = useState(null);
+  const [mergeProv, setMergeProv] = useState(null); // proveedorName to show merge modal
+  // group by bloque (if set) or proveedor
   const provMap={};
   valid.forEach(o=>{
     const k = o.bloque || o.proveedor || "Sin proveedor";
@@ -1089,7 +1172,6 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
   const pvList=Object.entries(provMap)
     .map(([key,orders])=>({
       key,
-      // Display name: if bloque, show "PROVEEDOR · Bloque N", else just proveedor
       name: orders[0].proveedor || key,
       bloque: orders[0].bloque || null,
       bloqueLabel: orders[0].bloque
@@ -1099,10 +1181,16 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
       total:orders.reduce((s,o)=>s+tot(o.products),0)
     }))
     .sort((a,b)=>{
-      // Group same proveedor together, then by bloque number
       if(a.name!==b.name) return b.total-a.total;
       return (a.bloqueLabel||"").localeCompare(b.bloqueLabel||"");
     });
+
+  // Which proveedores have 2+ bloques?
+  const bloqueCount={};
+  pvList.forEach(pv=>{ if(pv.bloque) bloqueCount[pv.name]=(bloqueCount[pv.name]||0)+1; });
+
+  // All pvList entries for a given proveedor (for the merge modal)
+  const bloquesDeProveedor=(name)=>pvList.filter(p=>p.name===name && p.bloque);
 
   if(pvList.length===0) return(
     <div className="dash-section"><div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600}}>No hay pedidos todavía.</div></div>
@@ -1127,7 +1215,6 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
               </div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-              {/* Project selector for whole proveedor group */}
               <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
                 <div style={{fontSize:".68rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"var(--accent)"}}>📁 Asignar proyecto al pedido</div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -1146,7 +1233,13 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
                 <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
-                <div style={{display:"flex",gap:7}}>
+                <div style={{display:"flex",gap:7,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                  {pv.bloque && bloqueCount[pv.name]>=2 && (
+                    <button onClick={()=>setMergeProv(pv.name)}
+                      style={{background:"linear-gradient(135deg,#fbbf24,#f59e0b)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(245,158,11,.35)",whiteSpace:"nowrap"}}>
+                      🔗 Unir bloques
+                    </button>
+                  )}
                   {pv.orders.reduce((s,o)=>s+o.products.length,0)>1&&(
                     <button
                       onClick={()=>setSplitProv({name:pv.name, bloque:pv.bloqueLabel, orders:pv.orders})}
@@ -1206,6 +1299,14 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
           proyectos={proyectos}
           onClose={()=>setSplitProv(null)}
           onSplit={onDividirPedido}
+        />
+      )}
+      {mergeProv&&(
+        <MergeBlocksModal
+          proveedorName={mergeProv}
+          bloques={bloquesDeProveedor(mergeProv)}
+          onClose={()=>setMergeProv(null)}
+          onMerge={onUnirBloques}
         />
       )}
     </div>
@@ -1901,6 +2002,38 @@ function App(){
     }
   };
 
+  const unirBloques=async(proveedorName, srcOrders)=>{
+    const fb=getFB();
+    const now=new Date().toISOString();
+    if(!srcOrders || srcOrders.length<2) return;
+    const base=srcOrders[0];
+    const ts=Date.now();
+    const idMerged="PED-"+String(ts).slice(-6)+"M";
+    const allProds=srcOrders.flatMap(o=>o.products);
+    const merged={
+      id:idMerged, date:now,
+      responsable:base.responsable,
+      proveedor:proveedorName,
+      bloque:"",
+      category:base.category,
+      notas:base.notas||"",
+      status:"pendiente",
+      proyecto:"",
+      products:allProds,
+    };
+    if(fb){
+      for(const o of srcOrders){
+        if(o._docId) await fb.deleteDoc(fb.doc(fb.db,"orders",o._docId));
+      }
+      await fb.addDoc(fb.collection(fb.db,"orders"),merged);
+    } else {
+      setOrders(prev=>{
+        const ids=new Set(srcOrders.map(o=>o.id));
+        return [merged,...prev.filter(o=>!ids.has(o.id))];
+      });
+    }
+  };
+
   const SCARDS=[
     {cls:"sc-pink",  emoji:"📋",num:stats.total,    label:"Total pedidos"},
     {cls:"sc-orange",emoji:"⏳",num:stats.pendiente,label:"Pendientes"},
@@ -1958,7 +2091,7 @@ function App(){
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} proveedores={proveedores}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} proveedores={proveedores}/>
           : (
           <>
             <div className="filters-section">
