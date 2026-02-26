@@ -455,7 +455,28 @@ const fmt = d  => new Date(d).toLocaleDateString("es-ES");
 const eur = n  => Number(n).toFixed(2)+" €";
 const gid = () => "#"+Math.floor(100000+Math.random()*900000);
 const tot = ps => ps.reduce((s,p)=>s+Number(p.unidades)*Number(p.precio),0);
-const initialOrders = [];
+const initialOrders = [
+  {id:"PED-000001",date:"2026-02-03",status:"recibido",category:"racoreria",solicitante:"Laura Martínez",responsable:"Carlos Gómez",proveedor:"Swagelok",notas:"Para el sistema de vacío del lab 3",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"SS-200-1-4",nombre:"Conector recto 1/4\" SS",unidades:10,precio:18.50,url:""},{codigo:"SS-400-2-4",nombre:"Codo 90° 1/4\" SS",unidades:6,precio:22.00,url:""},{codigo:"SS-8-VCR-1",nombre:"Fitting VCR macho 1/2\"",unidades:4,precio:34.90,url:""}]},
+  {id:"PED-000002",date:"2026-02-05",status:"recibido",category:"racoreria",solicitante:"Marcos Vidal",responsable:"Carlos Gómez",proveedor:"Swagelok",notas:"Renovación stock general",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"SS-400-1-4",nombre:"Racor T 1/4\" SS",unidades:8,precio:26.40,url:""},{codigo:"B-SS4-A",nombre:"Válvula de bola 1/4\" SS",unidades:2,precio:89.00,url:""},{codigo:"SS-200-R-4",nombre:"Reductor 1/4\" a 1/8\" SS",unidades:5,precio:15.20,url:""}]},
+  {id:"PED-000003",date:"2026-02-10",status:"realizado",category:"gases",solicitante:"Lidia Amodio",responsable:"José Fernández",proveedor:"Nippon Gases España SLU",notas:"Reposición gases laboratorio análisis",proyecto:"CIRPLACAR",bloque:"",
+   products:[{codigo:"HE-50L",nombre:"Helio 5.0 botella 50L",unidades:2,precio:230.00,url:""},{codigo:"N2-200L",nombre:"Nitrógeno líquido 200L",unidades:1,precio:180.00,url:""},{codigo:"AR-50L",nombre:"Argón 4.8 botella 50L",unidades:1,precio:195.00,url:""}]},
+  {id:"PED-000004",date:"2026-02-12",status:"realizado",category:"gases",solicitante:"Tomás Ruiz",responsable:"José Fernández",proveedor:"Nippon Gases España SLU",notas:"Gas para cromatógrafo",proyecto:"CIRPLACAR",bloque:"",
+   products:[{codigo:"H2-10L",nombre:"Hidrógeno 6.0 botella 10L",unidades:3,precio:145.00,url:""},{codigo:"CO2-50L",nombre:"CO₂ 4.5 botella 50L",unidades:2,precio:98.00,url:""}]},
+  {id:"PED-000005",date:"2026-02-14",status:"proceso",category:"reactivos",solicitante:"Ana Belén Soto",responsable:"",proveedor:"Sigma-Aldrich",notas:"Reactivos síntesis Q1",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"320331",nombre:"Acetonitrilo HPLC grade 2.5L",unidades:4,precio:67.50,url:"https://www.sigmaaldrich.com"},{codigo:"270725",nombre:"Ácido trifluoroacético 100mL",unidades:2,precio:42.00,url:"https://www.sigmaaldrich.com"},{codigo:"179418",nombre:"DMSO anhidro 100mL",unidades:3,precio:38.90,url:""}]},
+  {id:"PED-000006",date:"2026-02-15",status:"proceso",category:"gases",solicitante:"Lidia Amodio",responsable:"",proveedor:"Linde Gas",notas:"Gases especiales espectroscopía",proyecto:"",bloque:"",
+   products:[{codigo:"SF6-2L",nombre:"Hexafluoruro de azufre 2L",unidades:1,precio:312.00,url:""},{codigo:"N2O-10L",nombre:"Óxido nitroso puro 10L",unidades:2,precio:187.00,url:""}]},
+  {id:"PED-000007",date:"2026-02-17",status:"pendiente",category:"racoreria",solicitante:"Marcos Vidal",responsable:"",proveedor:"Swagelok",notas:"",proyecto:"",bloque:"",
+   products:[{codigo:"SS-600-1-8",nombre:"Conector recto 3/8\" SS",unidades:12,precio:21.30,url:""},{codigo:"SS-810-1-8",nombre:"Tubo SS 316 3/8\" x 1m",unidades:5,precio:45.00,url:""}]},
+  {id:"PED-000008",date:"2026-02-18",status:"pendiente",category:"disolventes",solicitante:"Carmen Ibáñez",responsable:"",proveedor:"VWR International",notas:"Disolventes para extracción",proyecto:"",bloque:"",
+   products:[{codigo:"ETOH-2.5L",nombre:"Etanol absoluto 2.5L",unidades:6,precio:28.40,url:""},{codigo:"HEXANO-1L",nombre:"n-Hexano HPLC 1L",unidades:4,precio:34.90,url:""},{codigo:"DCMETH-1L",nombre:"Diclorometano grado análisis 1L",unidades:3,precio:22.60,url:""}]},
+  {id:"PED-000009",date:"2026-02-19",status:"pendiente",category:"reactivos",solicitante:"Tomás Ruiz",responsable:"",proveedor:"Sigma-Aldrich",notas:"Patrones para calibración HPLC",proyecto:"CIRPLACAR",bloque:"",
+   products:[{codigo:"47489",nombre:"Cafeína estándar analítico 1g",unidades:1,precio:56.00,url:""},{codigo:"33615",nombre:"Sacarosa patrón primario 100g",unidades:2,precio:31.50,url:""}]},
+  {id:"PED-000010",date:"2026-02-20",status:"revision",category:"gases",solicitante:"Laura Martínez",responsable:"",proveedor:"Nippon Gases España SLU",notas:"Revisar precios antes de confirmar",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"O2-50L",nombre:"Oxígeno 5.0 botella 50L",unidades:2,precio:210.00,url:""},{codigo:"HE-10L",nombre:"Helio 6.0 botella 10L",unidades:1,precio:540.00,url:""}]},
+];
 function getFB(){ return window._fb||null; }
 
 function StatusTag({status}){
@@ -875,7 +896,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnir
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
+        <ProveedorView valid={valid.filter(o=>o.status==="realizado"||o.status==="recibido")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -1917,6 +1938,119 @@ function ProviderDB({proveedores,setProveedores}){
   );
 }
 
+/* ── POR PROVEEDOR ACTIVO (lista pedidos, pre-realizado) ── */
+const ACTIVE_STATUSES = ["pendiente","revision","aprobado","proceso"];
+function PorProveedorActivo({orders, onCambiarStatusBloque}){
+  const [realizadoProv, setRealizadoProv] = useState(null);
+  const [realizadoResp, setRealizadoResp] = useState("");
+
+  const active = orders.filter(o=>ACTIVE_STATUSES.includes(o.status));
+  const provMap = {};
+  active.forEach(o=>{
+    const k = o.proveedor||"Sin proveedor";
+    if(!provMap[k]) provMap[k]=[];
+    provMap[k].push(o);
+  });
+  const pvList = Object.entries(provMap)
+    .map(([name,ords])=>({name, orders:ords, total:ords.reduce((s,o)=>s+tot(o.products),0)}))
+    .sort((a,b)=>b.total-a.total);
+
+  if(pvList.length===0) return(
+    <div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600,fontSize:".9rem"}}>
+      No hay pedidos activos por gestionar.
+    </div>
+  );
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:"1rem",marginTop:"1rem"}}>
+      {pvList.map(pv=>{
+        const nItems = pv.orders.reduce((s,o)=>s+o.products.length,0);
+        const solicitantes = [...new Set(pv.orders.map(o=>o.solicitante||o.responsable))];
+        const isOpen = realizadoProv?.name===pv.name;
+        return(
+          <div key={pv.name} style={{background:"white",borderRadius:14,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"hidden"}}>
+            {/* Header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:".9rem 1.2rem",flexWrap:"wrap",gap:10}}>
+              <div>
+                <div style={{fontWeight:900,fontSize:"1rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:8}}>
+                  🏪 {pv.name}
+                </div>
+                <div style={{fontSize:".73rem",color:"var(--muted)",fontWeight:600,marginTop:3}}>
+                  {pv.orders.length} solicitud{pv.orders.length!==1?"es":" "} · {nItems} artículo{nItems!==1?"s":""} · {solicitantes.slice(0,3).join(", ")}{solicitantes.length>3?` +${solicitantes.length-3}`:""}
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <div style={{fontWeight:900,fontSize:"1.2rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
+                {isOpen ? (
+                  <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:9,padding:"6px 10px",flexWrap:"wrap"}}>
+                    <span style={{fontSize:".72rem",fontWeight:700,color:"#c2410c",whiteSpace:"nowrap"}}>👤 Responsable del pedido:</span>
+                    <input
+                      autoFocus
+                      value={realizadoResp}
+                      onChange={e=>setRealizadoResp(e.target.value)}
+                      onKeyDown={e=>e.key==="Enter"&&realizadoResp.trim()&&(onCambiarStatusBloque(pv.orders,"realizado",realizadoResp.trim()),setRealizadoProv(null),setRealizadoResp(""))}
+                      placeholder="Nombre y apellidos…"
+                      style={{padding:"4px 9px",border:"1.5px solid #fed7aa",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".78rem",fontWeight:700,outline:"none",minWidth:160}}
+                    />
+                    <button
+                      onClick={()=>{ if(!realizadoResp.trim()) return; onCambiarStatusBloque(pv.orders,"realizado",realizadoResp.trim()); setRealizadoProv(null); setRealizadoResp(""); }}
+                      disabled={!realizadoResp.trim()}
+                      style={{background:realizadoResp.trim()?"#c2410c":"#e5e7eb",color:"white",border:"none",borderRadius:7,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:realizadoResp.trim()?"pointer":"default",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                      📦 Confirmar
+                    </button>
+                    <button onClick={()=>{ setRealizadoProv(null); setRealizadoResp(""); }}
+                      style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"5px 9px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={()=>{ setRealizadoProv({name:pv.name}); setRealizadoResp(""); }}
+                    style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(194,65,12,.35)",whiteSpace:"nowrap"}}>
+                    📦 Pedido realizado
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Items table */}
+            <div style={{overflowX:"auto",borderTop:"1.5px solid var(--border)"}}>
+              <table className="ptable" style={{margin:0,borderRadius:0}}>
+                <thead>
+                  <tr>
+                    <th>Artículo</th>
+                    <th>Código</th>
+                    <th>Solicitante</th>
+                    <th style={{textAlign:"right"}}>Uds.</th>
+                    <th style={{textAlign:"right"}}>Precio/ud</th>
+                    <th style={{textAlign:"right"}}>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pv.orders.flatMap((o,oi)=>
+                    o.products.map((p,pi)=>(
+                      <tr key={oi+"-"+pi}>
+                        <td style={{fontWeight:800}}>{p.nombre}</td>
+                        <td style={{color:"var(--muted)",fontSize:".78rem"}}>{p.codigo||"—"}</td>
+                        <td style={{fontSize:".8rem",color:"var(--muted)",fontWeight:700}}>{o.solicitante||o.responsable}</td>
+                        <td style={{textAlign:"right"}}>{p.unidades}</td>
+                        <td style={{textAlign:"right"}}>{eur(p.precio)}</td>
+                        <td style={{textAlign:"right",fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="5" style={{textAlign:"right",fontWeight:800,fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em",color:"var(--muted)"}}>Total {pv.name}</td>
+                    <td style={{textAlign:"right",fontWeight:900,color:"var(--accent)",fontSize:"1rem"}}>{eur(pv.total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── APP ── */
 function App(){
   const { useEffect } = React;
@@ -1926,6 +2060,7 @@ function App(){
   const [catalogo,setCatalogo]       = useState([]);
   const [filter,setFilter]       = useState("todos");
   const [search,setSearch]       = useState("");
+  const [vistaProveedor,setVistaProveedor] = useState(false);
   const [showNew,setShowNew]     = useState(false);
   const [showLogin,setShowLogin] = useState(false);
   const [isAdmin,setIsAdmin]     = useState(false);
@@ -2171,15 +2306,25 @@ function App(){
             <div className="filters-section">
               <div className="search-wrap">
                 <span className="search-icon">🔍</span>
-                <input placeholder="Buscar por responsable, proveedor, proyecto o producto…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                <input placeholder="Buscar por solicitante, proveedor, proyecto o producto…" value={search} onChange={e=>setSearch(e.target.value)} disabled={vistaProveedor}/>
               </div>
-              <div className="filter-pills">
-                {STATUSES.map(s=>(
+              <div className="filter-pills" style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+                {!vistaProveedor&&STATUSES.map(s=>(
                   <button key={s.key} className={`filter-btn${filter===s.key?" act":""}`} onClick={()=>setFilter(s.key)}>{s.label}</button>
                 ))}
+                {isAdmin&&(
+                  <button
+                    onClick={()=>setVistaProveedor(v=>!v)}
+                    style={{marginLeft:"auto",background:vistaProveedor?"linear-gradient(135deg,#6d28d9,#4c1d95)":"linear-gradient(135deg,#a78bfa,#7c3aed)",color:"white",border:"none",borderRadius:9,padding:"7px 15px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(109,40,217,.3)",whiteSpace:"nowrap"}}>
+                    🏪 {vistaProveedor?"← Volver a lista":"Por proveedor"}
+                  </button>
+                )}
               </div>
             </div>
-            <div className="orders-list">
+
+            {vistaProveedor
+              ? <PorProveedorActivo orders={orders} onCambiarStatusBloque={cambiarStatusBloque}/>
+              : <div className="orders-list">
               {filtered.length===0
                 ?<div className="empty-state"><span className="big">📭</span><p>Todavía no hay solicitudes</p><small>Pulsa "+ Nueva Solicitud" para crear la primera</small></div>
                 :filtered.map(o=>{
@@ -2215,7 +2360,7 @@ function App(){
                   );
                 })
               }
-            </div>
+            </div>}
           </>
         )}
         </>}
