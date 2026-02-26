@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -91,6 +92,30 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .sc-orange .stat-label { color: #ea580c; }
 .sc-blue .stat-label   { color: #2563eb; }
 .sc-green .stat-label  { color: #16a34a; }
+
+/* ── PROVIDER DATABASE ── */
+.pdb-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(320px,1fr)); gap: 14px; margin-bottom: 1.5rem; }
+.pdb-card { background: white; border-radius: 14px; border: 1.5px solid var(--border); box-shadow: var(--shadow); overflow: hidden; transition: box-shadow .18s,transform .18s; }
+.pdb-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.pdb-card-head { padding: .9rem 1.1rem .7rem; background: linear-gradient(135deg,#f8f7ff,#f0eeff); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.pdb-card-name { font-weight: 900; font-size: 1rem; color: var(--navy); display: flex; align-items: center; gap: 7px; }
+.pdb-card-body { padding: .8rem 1.1rem; display: flex; flex-direction: column; gap: 4px; }
+.pdb-field { display: flex; gap: 8px; font-size: .78rem; }
+.pdb-field-lbl { color: var(--muted); font-weight: 700; min-width: 80px; flex-shrink: 0; }
+.pdb-field-val { color: var(--navy); font-weight: 600; word-break: break-all; }
+.pdb-field-val a { color: var(--accent); text-decoration: none; }
+.pdb-field-val a:hover { text-decoration: underline; }
+.pdb-card-actions { padding: .6rem 1.1rem .8rem; display: flex; gap: 7px; }
+.pdb-btn-edit { background: #f3f0ff; color: var(--accent); border: 1.5px solid #ddd6fe; border-radius: 8px; padding: 5px 12px; font-size: .75rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; transition: all .15s; }
+.pdb-btn-edit:hover { background: #ede9fe; }
+.pdb-btn-del { background: #fff0f6; color: #e11d48; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 5px 9px; font-size: .75rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; transition: all .15s; }
+.pdb-btn-del:hover { background: #fce7f3; }
+.pdb-modal-overlay { position: fixed; inset: 0; background: rgba(45,58,94,.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(3px); }
+.pdb-modal { background: white; border-radius: 20px; box-shadow: var(--shadow-md); padding: 1.75rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+.pdb-modal h3 { font-size: 1.1rem; font-weight: 900; color: var(--navy); margin-bottom: 1.2rem; }
+.pdb-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pdb-form-grid .full { grid-column: span 2; }
+.yellow-hint { font-size: .7rem; color: #b45309; font-weight: 700; background: #fef9c3; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 9px; margin-top: 4px; display: inline-block; }
 
 /* ── PROJECT MANAGER ── */
 .pm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
@@ -691,7 +716,7 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders,proyectos=[],onAsignarProyecto}){
+function Dashboard({orders,proyectos=[],onAsignarProyecto,proveedores=[]}){
   const [dashTab,setDashTab]=useState("gasto");
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
@@ -744,7 +769,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto}){
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto}/>
+        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} proveedores={proveedores}/>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -816,7 +841,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto}){
 }
 
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid,proyectos=[],onAsignarProyecto}){
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,proveedores=[]}){
   // group by proveedor
   const provMap={};
   valid.forEach(o=>{
@@ -824,17 +849,17 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto}){
     if(!provMap[k]) provMap[k]=[];
     provMap[k].push(o);
   });
-  const proveedores=Object.entries(provMap)
+  const pvList=Object.entries(provMap)
     .map(([name,orders])=>({name,orders,total:orders.reduce((s,o)=>s+tot(o.products),0)}))
     .sort((a,b)=>b.total-a.total);
 
-  if(proveedores.length===0) return(
+  if(pvList.length===0) return(
     <div className="dash-section"><div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600}}>No hay pedidos todavía.</div></div>
   );
 
   return(
     <div>
-      {proveedores.map(pv=>(
+      {pvList.map(pv=>(
         <div key={pv.name} className="dash-section" style={{marginBottom:"1rem"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1rem",flexWrap:"wrap",gap:12}}>
             <div>
@@ -863,7 +888,13 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto}){
                 </div>
                 {pv.orders[0]?.proyecto&&<div style={{fontSize:".68rem",color:"#15803d",fontWeight:700}}>✅ Pedidos en proceso</div>}
               </div>
-              <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px",minWidth:80,textAlign:"right"}}>{eur(pv.total)}</div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
+                <button
+                  onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===pv.name.toLowerCase()); generatePedidoExcel(pv.name, pv.orders, dbProv||null); }}
+                  style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(34,197,94,.35)",whiteSpace:"nowrap"}}
+                >📥 Descargar Excel</button>
+              </div>
             </div>
           </div>
           <table className="ptable">
@@ -1006,11 +1037,291 @@ function ProjectManager({proyectos,setProyectos}){
   );
 }
 
+
+/* ── EXCEL GENERATOR ── */
+function generatePedidoExcel(proveedor, orders, info) {
+  const XLSX = window.XLSX;
+  if(!XLSX){ alert("Error: librería Excel no cargada"); return; }
+
+  const wb = XLSX.utils.book_new();
+  const wsData = [];
+
+  // Row 1: empty
+  wsData.push([]);
+  // Row 2: title
+  wsData.push([null,null,null,null,null,"         SOLICITUD DE PEDIDO"]);
+  // Row 3-4: empty
+  wsData.push([]); wsData.push([]);
+  // Row 5: headers
+  wsData.push([null,"Dirección de envío",null,null,null,"Datos de facturación",null,"Datos Proveedor"]);
+  // Row 6 — provider name + address line 1
+  const pi = info || {};
+  wsData.push([null,"Fundación IMDEA Energía",null,null,null,"Fundación IMDEA Energía",null, pi.nombre||proveedor]);
+  // Row 7
+  wsData.push([null,"Avenida Ramón de la Sagra 3",null,null,null,"Avda. Ramón de la Sagra, 3",null, pi.direccion||""]);
+  // Row 8
+  wsData.push([null,"Parque Tecnológico de Móstoles",null,null,null,"Parque Tecnológico de Móstoles",null, pi.ciudad ? (pi.cp ? "("+pi.cp+") "+pi.ciudad : pi.ciudad) : ""]);
+  // Row 9
+  wsData.push([null,"28935 - Móstoles (MADRID)",null,null,null,"28935 Móstoles, Madrid",null, ""]);
+  // Row 10
+  wsData.push([null,"Tel:  91 737 1135",null,null,null,"Tel:  91 737 11 20",null, pi.tel ? "Tel: "+pi.tel : ""]);
+  // Row 11
+  wsData.push([null,null,null,null,null,"C.I.F: G-84912716",null, pi.fax ? "Fax: "+pi.fax : ""]);
+  // Row 12
+  wsData.push([null,"Att.: ",null,null,null,null,null, pi.nif ? "NIF: "+pi.nif : ""]);
+  // Row 12b — email (H12)
+  // email added separately via cell write below
+  // Row 13
+  wsData.push([null,"Unidad:","UPTQ (PLANTA PILOTO o Laboratorio PLANTA 2)"]);
+  // Row 14: empty
+  wsData.push([]);
+  // Row 15: date and order number
+  const today = new Date().toLocaleDateString("es-ES");
+  wsData.push([null,"FECHA: ",today,null,null,"Nº PEDIDO:","P-XXXXX"]);
+  // Row 16: empty
+  wsData.push([]);
+  // Row 17: table headers
+  wsData.push([null,"ITEM","CANTIDAD","REFERENCIA","DESCRIPCIÓN",null,null,null,"PRECIO UNITARIO","DTO.","TOTAL €
+Iva no Incl"]);
+  // Row 18: empty (merged with 17)
+  wsData.push([]);
+
+  // Rows 19+: items — flatten all products from all orders
+  let itemNum = 1;
+  const firstItemRow = 19;
+  let currentRow = firstItemRow;
+  const itemRows = [];
+
+  orders.forEach(order => {
+    order.products.forEach(p => {
+      wsData.push([
+        null,
+        itemNum,
+        Number(p.unidades)||0,
+        p.codigo||"",
+        p.nombre||"",
+        null, null, null,
+        Number(p.precio)||0,
+        0,
+        null  // formula added separately
+      ]);
+      itemRows.push(currentRow);
+      itemNum++;
+      currentRow++;
+    });
+  });
+
+  // Fill up to at least 10 item rows
+  while(itemNum <= 10) {
+    wsData.push([null, itemNum, null, null, null, null, null, null, null, null, null]);
+    itemRows.push(currentRow);
+    itemNum++;
+    currentRow++;
+  }
+
+  const lastItemRow = currentRow - 1;
+
+  // Subtotal row
+  wsData.push([null,null,null,null,null,null,null,null,"SUBTOTAL",null,null]);
+  const subtotalRow = currentRow; currentRow++;
+  // IVA row
+  wsData.push([null,null,null,null,null,null,null,null,"IVA",0.21,null]);
+  const ivaRow = currentRow; currentRow++;
+  // TOTAL row
+  wsData.push([null,null,null,null,null,null,null,null,"TOTAL",null,null]);
+  const totalRow = currentRow; currentRow++;
+  // Plazo / forma pago
+  wsData.push([null,null,"PLAZO DE ENTREGA:",null,null,null,null,"Sello de la empresa:"]);
+  wsData.push([null,null,"Forma de Pago:"]);
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Helper to set yellow fill on a cell
+  function yellowCell(ws, addr, value){
+    if(!ws[addr]) ws[addr] = {};
+    ws[addr].v = value;
+    ws[addr].t = "s";
+    ws[addr].s = { fill: { fgColor: { rgb: "FFFF00" } } };
+  }
+
+  // H12 = email pedidos (yellow)
+  yellowCell(ws, "H12", pi.email ? "email pedidos: "+pi.email : "email pedidos:");
+
+  // Add formulas for item totals and subtotal/iva/total
+  itemRows.forEach(r => {
+    ws["K"+r] = { f: "+(C"+r+"*I"+r+")-(C"+r+"*I"+r+"*J"+r+")", t:"n" };
+  });
+  ws["K"+subtotalRow] = { f: "SUM(K"+firstItemRow+":K"+lastItemRow+")", t:"n" };
+  ws["K"+ivaRow]      = { f: "+K"+subtotalRow+"*J"+ivaRow, t:"n" };
+  ws["K"+totalRow]    = { f: "+K"+subtotalRow+"+K"+ivaRow, t:"n" };
+
+  // Merges (mirroring template)
+  ws["!merges"] = [
+    {s:{r:4,c:1},e:{r:4,c:3}},   // B5:D5
+    {s:{r:5,c:1},e:{r:5,c:3}},   // B6:D6
+    {s:{r:6,c:1},e:{r:6,c:3}},   // B7:D7
+    {s:{r:7,c:1},e:{r:7,c:4}},   // B8:E8
+    {s:{r:8,c:1},e:{r:8,c:4}},   // B9:E9
+    {s:{r:9,c:1},e:{r:9,c:4}},   // B10:E10
+    {s:{r:4,c:7},e:{r:4,c:10}},  // H5:K5
+    {s:{r:14,c:2},e:{r:14,c:3}}, // C15:D15
+    {s:{r:14,c:6},e:{r:14,c:8}}, // G15:I15
+    {s:{r:16,c:1},e:{r:17,c:1}}, // B17:B18
+    {s:{r:16,c:2},e:{r:17,c:2}}, // C17:C18
+    {s:{r:16,c:3},e:{r:17,c:3}}, // D17:D18
+    {s:{r:16,c:4},e:{r:17,c:7}}, // E17:H18
+    {s:{r:16,c:8},e:{r:17,c:8}}, // I17:I18
+    {s:{r:16,c:9},e:{r:17,c:9}}, // J17:J18
+    {s:{r:16,c:10},e:{r:17,c:10}},// K17:K18
+  ];
+
+  // Mark H6:H12 yellow (provider data cells)
+  ["H6","H7","H8","H9","H10","H11"].forEach(addr=>{
+    if(ws[addr]){
+      ws[addr].s = { fill: { fgColor: { rgb: "FFFF00" } } };
+    } else {
+      ws[addr] = { v:"", t:"s", s:{ fill: { fgColor: { rgb: "FFFF00" } } } };
+    }
+  });
+
+  // Column widths
+  ws["!cols"] = [
+    {wch:2},    // A
+    {wch:8},    // B ITEM
+    {wch:12},   // C CANTIDAD
+    {wch:20},   // D REFERENCIA
+    {wch:30},   // E DESCRIPCIÓN
+    {wch:8},{wch:8},{wch:8}, // F G H
+    {wch:14},   // I PRECIO
+    {wch:9},    // J DTO
+    {wch:16},   // K TOTAL
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Hoja 1");
+  const filename = "Pedido_"+proveedor.replace(/[^a-zA-Z0-9]/g,"_")+".xlsx";
+  XLSX.writeFile(wb, filename, {cellStyles:true});
+}
+
+/* ── PROVIDER DATABASE ── */
+function ProviderDB({proveedores,setProveedores}){
+  const emptyForm = {nombre:"",direccion:"",ciudad:"",cp:"",tel:"",fax:"",nif:"",email:""};
+  const [showModal,setShowModal] = useState(false);
+  const [editing,setEditing]     = useState(null); // null=new, id=edit
+  const [form,setForm]           = useState(emptyForm);
+  const [err,setErr]             = useState("");
+
+  const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const openNew=()=>{ setForm(emptyForm); setEditing(null); setErr(""); setShowModal(true); };
+  const openEdit=p=>{ setForm({nombre:p.nombre||"",direccion:p.direccion||"",ciudad:p.ciudad||"",cp:p.cp||"",tel:p.tel||"",fax:p.fax||"",nif:p.nif||"",email:p.email||""}); setEditing(p.id); setErr(""); setShowModal(true); };
+
+  const save=async()=>{
+    if(!form.nombre.trim()) return setErr("El nombre del proveedor es obligatorio.");
+    const fb=getFB();
+    if(editing===null){
+      // new
+      const exists=proveedores.find(p=>p.nombre.toLowerCase()===form.nombre.trim().toLowerCase());
+      if(exists) return setErr("Ya existe un proveedor con ese nombre.");
+      const newP={...form,nombre:form.nombre.trim(),id:Date.now()};
+      if(fb){ await fb.addDoc(fb.collection(fb.db,"proveedores"),newP); }
+      else { setProveedores(ps=>[...ps,newP]); }
+    } else {
+      // edit
+      const p=proveedores.find(x=>x.id===editing);
+      const updated={...p,...form,nombre:form.nombre.trim()};
+      if(fb&&p?._docId){ await fb.updateDoc(fb.doc(fb.db,"proveedores",p._docId),updated); }
+      else { setProveedores(ps=>ps.map(x=>x.id===editing?updated:x)); }
+    }
+    setShowModal(false);
+  };
+
+  const del=async p=>{
+    if(!confirm("¿Eliminar proveedor "+p.nombre+"?")) return;
+    const fb=getFB();
+    if(fb&&p._docId){ await fb.deleteDoc(fb.doc(fb.db,"proveedores",p._docId)); }
+    else { setProveedores(ps=>ps.filter(x=>x.id!==p.id)); }
+  };
+
+  const fields = [
+    {k:"nombre",  lbl:"Nombre *",        full:true,  ph:"Nombre comercial del proveedor"},
+    {k:"nif",     lbl:"NIF/CIF",         full:false, ph:"B12345678"},
+    {k:"email",   lbl:"Email pedidos",   full:false, ph:"pedidos@proveedor.com"},
+    {k:"tel",     lbl:"Teléfono",        full:false, ph:"+34 91 000 0000"},
+    {k:"fax",     lbl:"Fax",            full:false, ph:"+34 91 000 0001"},
+    {k:"direccion",lbl:"Dirección",      full:true,  ph:"Calle, número"},
+    {k:"cp",      lbl:"C.P.",           full:false, ph:"28000"},
+    {k:"ciudad",  lbl:"Ciudad",         full:false, ph:"Madrid"},
+  ];
+
+  return(
+    <div>
+      <div className="pm-header">
+        <div>
+          <div className="pm-title">🏪 Base de datos de proveedores</div>
+          <div className="pm-subtitle">La info de cada proveedor se usa para rellenar automáticamente el Excel de pedido</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span style={{background:"#eef4ff",color:"#2563eb",padding:"4px 12px",borderRadius:20,fontSize:".8rem",fontWeight:700}}>{proveedores.length} proveedores</span>
+          <button className="btn-primary" onClick={openNew} style={{fontSize:".82rem",padding:"8px 16px"}}>+ Añadir proveedor</button>
+        </div>
+      </div>
+
+      {proveedores.length===0
+        ?<div className="pm-empty">🏪 No hay proveedores todavía. Añade el primero.</div>
+        :<div className="pdb-grid">
+          {proveedores.map(p=>(
+            <div key={p.id} className="pdb-card">
+              <div className="pdb-card-head">
+                <div className="pdb-card-name">🏪 {p.nombre}</div>
+                {p.nif&&<span style={{fontSize:".7rem",fontWeight:700,color:"var(--muted)"}}>{p.nif}</span>}
+              </div>
+              <div className="pdb-card-body">
+                {p.email&&<div className="pdb-field"><span className="pdb-field-lbl">Email</span><span className="pdb-field-val"><a href={"mailto:"+p.email}>{p.email}</a></span></div>}
+                {p.tel&&<div className="pdb-field"><span className="pdb-field-lbl">Tel.</span><span className="pdb-field-val">{p.tel}</span></div>}
+                {p.fax&&<div className="pdb-field"><span className="pdb-field-lbl">Fax</span><span className="pdb-field-val">{p.fax}</span></div>}
+                {p.direccion&&<div className="pdb-field"><span className="pdb-field-lbl">Dirección</span><span className="pdb-field-val">{p.direccion}{p.cp?" · "+p.cp:""}{p.ciudad?" · "+p.ciudad:""}</span></div>}
+                {!p.email&&!p.tel&&!p.direccion&&<div style={{fontSize:".78rem",color:"var(--muted)",fontStyle:"italic"}}>Sin datos de contacto</div>}
+              </div>
+              <div className="pdb-card-actions">
+                <button className="pdb-btn-edit" onClick={()=>openEdit(p)}>✏️ Editar</button>
+                <button className="pdb-btn-del" onClick={()=>del(p)}>🗑️</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      }
+
+      {showModal&&(
+        <div className="pdb-modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
+          <div className="pdb-modal">
+            <h3>{editing===null?"➕ Nuevo proveedor":"✏️ Editar proveedor"}</h3>
+            <div className="yellow-hint">⭐ Los campos completados se rellenarán automáticamente en el Excel de pedido (celdas amarillas)</div>
+            {err&&<div className="err-msg" style={{margin:"10px 0"}}>⚠️ {err}</div>}
+            <div className="pdb-form-grid" style={{marginTop:14}}>
+              {fields.map(f=>(
+                <div key={f.k} className={"form-group"+(f.full?" full":"")} style={{marginBottom:0}}>
+                  <label className="form-label">{f.lbl}</label>
+                  <input className="form-input" placeholder={f.ph} value={form[f.k]} onChange={e=>sf(f.k,e.target.value)}/>
+                </div>
+              ))}
+            </div>
+            <div className="modal-footer" style={{marginTop:"1.25rem"}}>
+              <button className="btn-sec" onClick={()=>setShowModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={save}>💾 Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── APP ── */
 function App(){
   const { useEffect } = React;
   const [orders,setOrders]       = useState(initialOrders);
-  const [proyectos,setProyectos] = useState([]);
+  const [proyectos,setProyectos]   = useState([]);
+  const [proveedores,setProveedores] = useState([]);
   const [filter,setFilter]       = useState("todos");
   const [search,setSearch]       = useState("");
   const [showNew,setShowNew]     = useState(false);
@@ -1030,6 +1341,9 @@ function App(){
       });
       fb.onSnapshot(fb.collection(fb.db,"proyectos"),snap=>{
         setProyectos(snap.docs.map(d=>({...d.data(),_docId:d.id})));
+      });
+      fb.onSnapshot(fb.collection(fb.db,"proveedores"),snap=>{
+        setProveedores(snap.docs.map(d=>({...d.data(),_docId:d.id})));
       });
     },300);
     return ()=>clearInterval(iv);
@@ -1121,14 +1435,17 @@ function App(){
             <button className={`tab-btn${tab==="pedidos"?" act":""}`} onClick={()=>setTab("pedidos")}>📋 Pedidos</button>
             <button className={`tab-btn${tab==="resumen"?" act":""}`} onClick={()=>setTab("resumen")}>📊 Resumen</button>
             <button className={`tab-btn${tab==="proyectos"?" act":""}`} onClick={()=>setTab("proyectos")}>📁 Proyectos</button>
+            <button className={`tab-btn${tab==="proveedores"?" act":""}`} onClick={()=>setTab("proveedores")}>🏪 Proveedores</button>
           </div>
         )}
 
         {/* CONTENT */}
-        {tab==="proyectos"&&isAdmin
+        {tab==="proveedores"&&isAdmin
+          ? <ProviderDB proveedores={proveedores} setProveedores={setProveedores}/>
+          : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} proveedores={proveedores}/>
           : (
           <>
             <div className="filters-section">
