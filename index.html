@@ -851,8 +851,8 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,proveedores=[]}){
-  const [dashTab,setDashTab]=useState("gasto");
+function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,initialDashTab="gasto",proveedores=[]}){
+  const [dashTab,setDashTab]=useState(initialDashTab);
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
 
@@ -904,7 +904,37 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnir
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid.filter(o=>o.status==="realizado"||o.status==="recibido")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
+        <div>
+          {/* Section 1: Por gestionar — revision/aprobado */}
+          {valid.filter(o=>o.status==="revision"||o.status==="aprobado").length>0&&(
+            <div style={{marginBottom:"1.5rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1rem",padding:"10px 14px",background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:12}}>
+                <span style={{fontSize:"1.1rem"}}>📋</span>
+                <div>
+                  <div style={{fontWeight:900,fontSize:".9rem",color:"#1d4ed8"}}>Por gestionar — Pendientes de asignación de proyecto</div>
+                  <div style={{fontSize:".73rem",color:"#3b82f6",fontWeight:600,marginTop:1}}>Asigna un proyecto para que pasen a "En proceso". Puedes dividir el pedido entre varios proyectos.</div>
+                </div>
+              </div>
+              <ProveedorView valid={valid.filter(o=>o.status==="revision"||o.status==="aprobado")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} showRealizadoBtn={false} proveedores={proveedores}/>
+            </div>
+          )}
+          {/* Section 2: Realizados/Recibidos — gestión final */}
+          {valid.filter(o=>o.status==="realizado"||o.status==="recibido").length>0&&(
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1rem",padding:"10px 14px",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12}}>
+                <span style={{fontSize:"1.1rem"}}>✅</span>
+                <div>
+                  <div style={{fontWeight:900,fontSize:".9rem",color:"#15803d"}}>Pedidos realizados y recibidos</div>
+                  <div style={{fontSize:".73rem",color:"#16a34a",fontWeight:600,marginTop:1}}>Asignación de proyecto, división de bloques y descarga de Excel.</div>
+                </div>
+              </div>
+              <ProveedorView valid={valid.filter(o=>o.status==="realizado"||o.status==="recibido")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
+            </div>
+          )}
+          {valid.filter(o=>["revision","aprobado","realizado","recibido"].includes(o.status)).length===0&&(
+            <div style={{textAlign:"center",padding:"3rem",color:"var(--muted)",fontWeight:600}}>No hay pedidos para gestionar.</div>
+          )}
+        </div>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -1204,7 +1234,7 @@ function MergeBlocksModal({proveedorName, bloques, onClose, onMerge}){
 }
 
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,proveedores=[]}){
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,showRealizadoBtn=true,proveedores=[]}){
   const [splitProv, setSplitProv] = useState(null);
   const [mergeProv, setMergeProv] = useState(null);
   const [realizadoProv, setRealizadoProv] = useState(null); // {key, orders} — mini-form
@@ -1307,8 +1337,8 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
                       style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(249,115,22,.35)",whiteSpace:"nowrap"}}
                     >✂️ Dividir</button>
                   )}
-                  {/* Marcar realizado — abre mini-form con campo responsable */}
-                  {pv.orders.some(o=>o.status!=="realizado"&&o.status!=="recibido") ? (
+                  {/* Marcar realizado — solo en sección realizado/recibido */}
+                  {showRealizadoBtn && (pv.orders.some(o=>o.status!=="realizado"&&o.status!=="recibido") ? (
                     realizadoProv?.key===pv.key
                       ? <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:9,padding:"6px 10px",flexWrap:"wrap"}}>
                           <span style={{fontSize:".72rem",fontWeight:700,color:"#c2410c",whiteSpace:"nowrap"}}>👤 Responsable del pedido:</span>
@@ -1338,7 +1368,7 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
                     <span style={{background:"#fff7ed",color:"#c2410c",border:"1.5px solid #fed7aa",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>
                       📦 Realizado
                     </span>
-                  )}
+                  ))}
                   <button
                     onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===pv.name.toLowerCase()); generatePedidoExcel(pv.name, pv.orders, dbProv||null); }}
                     style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(34,197,94,.35)",whiteSpace:"nowrap"}}
@@ -2065,6 +2095,9 @@ function App(){
   const [isAdmin,setIsAdmin]     = useState(false);
   const [selected,setSelected]   = useState(null);
   const [tab,setTab]             = useState("pedidos");
+  const [initialDashTab,setInitialDashTab] = useState("gasto");
+
+  const goToProveedorGestion = ()=>{ setTab("resumen"); setInitialDashTab("proveedor"); };
   const [loading,setLoading]     = useState(true);
 
   useEffect(()=>{
@@ -2287,6 +2320,29 @@ function App(){
           ))}
         </div>
 
+        {/* Banner avviso capo — pedidos por gestionar */}
+        {isAdmin && orders.filter(o=>o.status==="revision").length>0 && (
+          <div
+            onClick={()=>goToProveedorGestion()}
+            style={{cursor:"pointer",background:"linear-gradient(135deg,#eff6ff,#dbeafe)",border:"2px solid #93c5fd",borderRadius:14,padding:"12px 18px",marginBottom:"1rem",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(59,130,246,.15)",transition:"transform .15s,box-shadow .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(59,130,246,.25)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 12px rgba(59,130,246,.15)";}}
+          >
+            <div style={{background:"#1d4ed8",borderRadius:10,padding:"8px 10px",fontSize:"1.3rem",flexShrink:0}}>📋</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:900,fontSize:".95rem",color:"#1e3a8a"}}>
+                Tienes {orders.filter(o=>o.status==="revision").length} pedido{orders.filter(o=>o.status==="revision").length!==1?"s":""} pendiente{orders.filter(o=>o.status==="revision").length!==1?"s":""} de gestión
+              </div>
+              <div style={{fontSize:".75rem",color:"#3b82f6",fontWeight:600,marginTop:2}}>
+                Asigna proyectos, divide bloques y aprueba en el Resumen → Por proveedor
+              </div>
+            </div>
+            <div style={{background:"#1d4ed8",color:"white",borderRadius:9,padding:"6px 14px",fontSize:".78rem",fontWeight:800,whiteSpace:"nowrap",flexShrink:0}}>
+              Ver ahora →
+            </div>
+          </div>
+        )}
+
         {/* tabs — solo cuando es admin */}
         {isAdmin&&(
           <div className="tabs">
@@ -2306,7 +2362,7 @@ function App(){
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} isAdmin={isAdmin} initialDashTab={initialDashTab} proveedores={proveedores}/>
           : (
           <>
             <div className="filters-section">
