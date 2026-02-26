@@ -606,6 +606,7 @@ const LOCKED_STATUSES = ["realizado","recibido","rechazado"];
 function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto}){
   const [confirmDel,setConfirmDel]=useState(false);
   const total=tot(order.products);
+  const locked = !isAdmin && LOCKED_STATUSES.includes(order.status);
   return(
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -618,13 +619,15 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             </div>
             <div style={{fontSize:".78rem",color:"var(--muted)",fontWeight:600,display:"flex",gap:12,flexWrap:"wrap"}}>
               <span>📅 {fmt(order.date)}</span>
-              {order.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"1px 8px",borderRadius:20,fontWeight:700}}>📁 {order.proyecto}</span>}
+              {!locked&&order.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"1px 8px",borderRadius:20,fontWeight:700}}>📁 {order.proyecto}</span>}
             </div>
           </div>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontWeight:900,fontSize:"1.5rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(total)}</div>
-            <div style={{fontSize:".7rem",color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:".04em"}}>Total</div>
-          </div>
+          {!locked&&(
+            <div style={{textAlign:"right"}}>
+              <div style={{fontWeight:900,fontSize:"1.5rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(total)}</div>
+              <div style={{fontSize:".7rem",color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:".04em"}}>Total</div>
+            </div>
+          )}
         </div>
         {isAdmin&&(
           <div className="admin-zone">
@@ -646,7 +649,6 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
                   onClick={()=>onStatusChange(order.id,s)}>{STATUS_LABELS[s]}</button>
               ))}
             </div>
-
           </div>
         )}
         <div className="detail-section">
@@ -655,7 +657,7 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             <div className="detail-item"><div className="lbl">Responsable</div><div className="val">{order.responsable}</div></div>
             <div className="detail-item"><div className="lbl">Proveedor</div><div className="val">{order.proveedor}</div></div>
             <div className="detail-item"><div className="lbl">Categoría</div><div className="val"><CatTag cat={order.category}/></div></div>
-            {order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
+            {!locked&&order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
           </div>
         </div>
         {order.notas&&(
@@ -667,7 +669,13 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
         <div className="detail-section">
           <h3>Artículos · {order.products.length}</h3>
           <table className="ptable">
-            <thead><tr><th>Código</th><th>Producto</th><th>URL</th><th>Uds.</th><th>Precio/ud</th><th>Subtotal</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Código</th><th>Producto</th><th>URL</th><th>Uds.</th>
+                {!locked&&<th>Precio/ud</th>}
+                {!locked&&<th>Subtotal</th>}
+              </tr>
+            </thead>
             <tbody>
               {order.products.map((p,i)=>(
                 <tr key={i}>
@@ -675,14 +683,16 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
                   <td style={{fontWeight:800}}>{p.nombre}</td>
                   <td>{p.url?<a href={p.url} target="_blank" rel="noreferrer" style={{color:"var(--accent)",fontSize:".75rem",fontWeight:700,textDecoration:"none"}}>🔗 Ver</a>:"—"}</td>
                   <td>{p.unidades}</td>
-                  <td>{eur(p.precio)}</td>
-                  <td style={{fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>
+                  {!locked&&<td>{eur(p.precio)}</td>}
+                  {!locked&&<td style={{fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>}
                 </tr>
               ))}
-              <tr style={{background:"var(--bg)"}}>
-                <td colSpan="5" style={{textAlign:"right",fontWeight:800,color:"var(--muted)",fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em"}}>Total</td>
-                <td style={{fontWeight:900,color:"var(--accent)",fontSize:"1rem",letterSpacing:"-.3px"}}>{eur(total)}</td>
-              </tr>
+              {!locked&&(
+                <tr style={{background:"var(--bg)"}}>
+                  <td colSpan="5" style={{textAlign:"right",fontWeight:800,color:"var(--muted)",fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em"}}>Total</td>
+                  <td style={{fontWeight:900,color:"var(--accent)",fontSize:"1rem",letterSpacing:"-.3px"}}>{eur(total)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -2157,14 +2167,16 @@ function App(){
             <div className="orders-list">
               {filtered.length===0
                 ?<div className="empty-state"><span className="big">📭</span><p>Todavía no hay solicitudes</p><small>Pulsa "+ Nueva Solicitud" para crear la primera</small></div>
-                :filtered.map(o=>(
+                :filtered.map(o=>{
+                  const locked = !isAdmin && LOCKED_STATUSES.includes(o.status);
+                  return(
                   <div className="order-card" key={o.id} onClick={()=>setSelected(o)}>
                     <div className="order-card-left">
                       <div className="order-meta">
                         <span className="order-id">{o.id}</span>
                         <StatusTag status={o.status}/>
                         <CatTag cat={o.category}/>
-                        {o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
+                        {!locked&&o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
                         <span className="order-date">{fmt(o.date)}</span>
                       </div>
                       <div className="order-info">
@@ -2177,12 +2189,15 @@ function App(){
                         {o.products.length>3&&<span className="chip">+{o.products.length-3} más</span>}
                       </div>
                     </div>
-                    <div className="order-right">
-                      <div className="order-total-num">{eur(tot(o.products))}</div>
-                      <div className="order-total-lbl">total</div>
-                    </div>
+                    {!locked&&(
+                      <div className="order-right">
+                        <div className="order-total-num">{eur(tot(o.products))}</div>
+                        <div className="order-total-lbl">total</div>
+                      </div>
+                    )}
                   </div>
-                ))
+                  );
+                })
               }
             </div>
           </>
