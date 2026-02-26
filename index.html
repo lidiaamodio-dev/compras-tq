@@ -408,10 +408,11 @@ function CatTag({cat}){
 }
 
 /* ── NEW REQUEST ── */
-function NewRequestModal({onClose,onSubmit,proyectos=[]}){
+function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[]}){
   const [form,setForm]=useState({responsable:"",proveedor:"",category:"",notas:"",proyecto:""});
   const [prods,setProds]=useState([{codigo:"",nombre:"",unidades:1,precio:0,url:""}]);
   const [err,setErr]=useState("");
+  const [provOtro,setProvOtro]=useState(false); // true = writing custom name
   const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
   const sp=(i,k,v)=>setProds(ps=>ps.map((p,idx)=>idx===i?{...p,[k]:v}:p));
   const total=tot(prods);
@@ -437,7 +438,20 @@ function NewRequestModal({onClose,onSubmit,proyectos=[]}){
           </div>
           <div className="form-group">
             <label className="form-label">Proveedor <span className="req">*</span></label>
-            <input className="form-input" placeholder="Nombre del proveedor" value={form.proveedor} onChange={e=>sf("proveedor",e.target.value)}/>
+            {proveedores.length>0&&!provOtro
+              ? <div style={{display:"flex",gap:6}}>
+                  <select className="form-input" style={{flex:1}} value={form.proveedor}
+                    onChange={e=>{ if(e.target.value==="__otro__"){ setProvOtro(true); sf("proveedor",""); } else { sf("proveedor",e.target.value); } }}>
+                    <option value="">— Selecciona proveedor —</option>
+                    {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                    <option value="__otro__">✏️ Otro (escribir manualmente)…</option>
+                  </select>
+                </div>
+              : <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input className="form-input" style={{flex:1}} placeholder="Nombre del proveedor" value={form.proveedor} onChange={e=>sf("proveedor",e.target.value)} autoFocus={provOtro}/>
+                  {proveedores.length>0&&<button type="button" onClick={()=>{setProvOtro(false);sf("proveedor","");}} style={{background:"#f1f5f9",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",cursor:"pointer",fontSize:".8rem",fontWeight:700,fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>← Lista</button>}
+                </div>
+            }
           </div>
         </div>
         <div className="form-group" style={{marginTop:14}}>
@@ -1493,7 +1507,7 @@ function App(){
         )}
         </>}
       </main>
-      {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos}/>}
+      {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos} proveedores={proveedores}/>}
       {showLogin &&<LoginModal onClose={()=>setShowLogin(false)} onSuccess={()=>{setIsAdmin(true);setShowLogin(false);}}/>}
       {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder} proyectos={proyectos} onAsignarProyecto={asignarProyecto}/>}
     </>
