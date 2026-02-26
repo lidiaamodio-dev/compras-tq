@@ -77,6 +77,7 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .sc-blue   { background: #eef4ff; border-color: #c7d9ff; }
 .sc-green  { background: #edfff5; border-color: #a7f3cc; }
 .sc-brown  { background: #fff7ed; border-color: #fed7aa; }
+.sc-yellow { background: #fefce8; border-color: #fde68a; }
 .stat-row { display: flex; justify-content: space-between; align-items: flex-start; }
 .stat-num { font-size: 2.4rem; font-weight: 900; line-height: 1; letter-spacing: -2px; }
 .sc-pink .stat-num   { color: #db2777; }
@@ -84,18 +85,21 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .sc-blue .stat-num   { color: #2563eb; }
 .sc-green .stat-num  { color: #16a34a; }
 .sc-brown .stat-num  { color: #c2410c; }
+.sc-yellow .stat-num { color: #a16207; }
 .stat-icon-pill { padding: 5px 10px; border-radius: 20px; font-size: .75rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
 .sc-pink .stat-icon-pill   { background: #fce7f3; color: #be185d; }
 .sc-orange .stat-icon-pill { background: #ffedd5; color: #c2410c; }
 .sc-blue .stat-icon-pill   { background: #dbeafe; color: #1d4ed8; }
 .sc-green .stat-icon-pill  { background: #dcfce7; color: #15803d; }
 .sc-brown .stat-icon-pill  { background: #ffedd5; color: #c2410c; }
+.sc-yellow .stat-icon-pill { background: #fef08a; color: #a16207; }
 .stat-label { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .sc-pink .stat-label   { color: #db2777; }
 .sc-orange .stat-label { color: #ea580c; }
 .sc-blue .stat-label   { color: #2563eb; }
 .sc-green .stat-label  { color: #16a34a; }
 .sc-brown .stat-label  { color: #c2410c; }
+.sc-yellow .stat-label { color: #a16207; }
 
 /* ── PRODUCT CATALOG ── */
 .catalog-overlay { position:fixed; inset:0; background:rgba(45,58,94,.5); z-index:300; display:flex; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px); }
@@ -419,23 +423,27 @@ const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","
 const STATUSES = [
   {key:"todos",    label:"Todos"},
   {key:"pendiente",label:"⏳ Pendiente"},
-  {key:"revision", label:"🔍 En revisión"},
-  {key:"aprobado", label:"✅ Aprobado"},
+  {key:"revision", label:"📋 Por gestionar"},
+  {key:"aprobado", label:"🔖 Pdte. asignación"},
   {key:"proceso",  label:"🔄 En proceso"},
-  {key:"realizado",label:"📦 Pedido realizado"},
+  {key:"realizado",label:"📦 Realizado"},
   {key:"recibido", label:"✔️ Recibido"},
   {key:"rechazado",label:"❌ Rechazado"},
 ];
 
 const STATUS_LABELS = {
-  pendiente:"Pendiente", revision:"En revisión", aprobado:"Aprobado",
-  proceso:"En proceso", realizado:"Pedido realizado",
-  recibido:"Recibido", rechazado:"Rechazado",
+  pendiente:"Pendiente",
+  revision: "Por gestionar",
+  aprobado: "Pdte. asignación",
+  proceso:  "En proceso",
+  realizado:"Realizado",
+  recibido: "Recibido",
+  rechazado:"Rechazado",
 };
 const STATUS_COLORS = {
   pendiente:{bg:"#fff0f6",color:"#be185d"},
   revision: {bg:"#eff6ff",color:"#1d4ed8"},
-  aprobado: {bg:"#f0fdf4",color:"#15803d"},
+  aprobado: {bg:"#fef9c3",color:"#a16207"},
   proceso:  {bg:"#f5f3ff",color:"#6d28d9"},
   realizado:{bg:"#fff7ed",color:"#c2410c"},
   recibido: {bg:"#ecfdf5",color:"#047857"},
@@ -1938,13 +1946,13 @@ function ProviderDB({proveedores,setProveedores}){
   );
 }
 
-/* ── POR PROVEEDOR ACTIVO (lista pedidos, pre-realizado) ── */
+/* ── POR PROVEEDOR ACTIVO (lista pedidos, pre-gestión) ── */
 const ACTIVE_STATUSES = ["pendiente","revision","aprobado","proceso"];
 function PorProveedorActivo({orders, onCambiarStatusBloque}){
-  const [realizadoProv, setRealizadoProv] = useState(null);
-  const [realizadoResp, setRealizadoResp] = useState("");
+  const [enviandoProv, setEnviandoProv] = useState(null); // confirm inline
 
-  const active = orders.filter(o=>ACTIVE_STATUSES.includes(o.status));
+  // Only show pendiente — the others are already in progress
+  const active = orders.filter(o=>o.status==="pendiente");
   const provMap = {};
   active.forEach(o=>{
     const k = o.proveedor||"Sin proveedor";
@@ -1957,59 +1965,50 @@ function PorProveedorActivo({orders, onCambiarStatusBloque}){
 
   if(pvList.length===0) return(
     <div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600,fontSize:".9rem"}}>
-      No hay pedidos activos por gestionar.
+      No hay pedidos pendientes por agrupar.
     </div>
   );
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:"1rem",marginTop:"1rem"}}>
+      <div style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:10,padding:"10px 14px",fontSize:".8rem",color:"#1d4ed8",fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+        📋 Aquí se agrupan los pedidos pendientes por proveedor. Al pulsar "Enviar al jefe" el pedido pasa a <b>Por gestionar</b> para que el responsable asigne proyecto y apruebe.
+      </div>
       {pvList.map(pv=>{
         const nItems = pv.orders.reduce((s,o)=>s+o.products.length,0);
         const solicitantes = [...new Set(pv.orders.map(o=>o.solicitante||o.responsable))];
-        const isOpen = realizadoProv?.name===pv.name;
+        const isOpen = enviandoProv===pv.name;
         return(
           <div key={pv.name} style={{background:"white",borderRadius:14,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"hidden"}}>
-            {/* Header */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:".9rem 1.2rem",flexWrap:"wrap",gap:10}}>
               <div>
                 <div style={{fontWeight:900,fontSize:"1rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:8}}>
                   🏪 {pv.name}
                 </div>
                 <div style={{fontSize:".73rem",color:"var(--muted)",fontWeight:600,marginTop:3}}>
-                  {pv.orders.length} solicitud{pv.orders.length!==1?"es":" "} · {nItems} artículo{nItems!==1?"s":""} · {solicitantes.slice(0,3).join(", ")}{solicitantes.length>3?` +${solicitantes.length-3}`:""}
+                  {pv.orders.length} solicitud{pv.orders.length!==1?"es":""} · {nItems} artículo{nItems!==1?"s":""} · {solicitantes.slice(0,3).join(", ")}{solicitantes.length>3?` +${solicitantes.length-3}`:""}
                 </div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
                 <div style={{fontWeight:900,fontSize:"1.2rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
                 {isOpen ? (
-                  <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:9,padding:"6px 10px",flexWrap:"wrap"}}>
-                    <span style={{fontSize:".72rem",fontWeight:700,color:"#c2410c",whiteSpace:"nowrap"}}>👤 Responsable del pedido:</span>
-                    <input
-                      autoFocus
-                      value={realizadoResp}
-                      onChange={e=>setRealizadoResp(e.target.value)}
-                      onKeyDown={e=>e.key==="Enter"&&realizadoResp.trim()&&(onCambiarStatusBloque(pv.orders,"realizado",realizadoResp.trim()),setRealizadoProv(null),setRealizadoResp(""))}
-                      placeholder="Nombre y apellidos…"
-                      style={{padding:"4px 9px",border:"1.5px solid #fed7aa",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".78rem",fontWeight:700,outline:"none",minWidth:160}}
-                    />
-                    <button
-                      onClick={()=>{ if(!realizadoResp.trim()) return; onCambiarStatusBloque(pv.orders,"realizado",realizadoResp.trim()); setRealizadoProv(null); setRealizadoResp(""); }}
-                      disabled={!realizadoResp.trim()}
-                      style={{background:realizadoResp.trim()?"#c2410c":"#e5e7eb",color:"white",border:"none",borderRadius:7,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:realizadoResp.trim()?"pointer":"default",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
-                      📦 Confirmar
+                  <div style={{display:"flex",alignItems:"center",gap:6,background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:9,padding:"6px 10px"}}>
+                    <span style={{fontSize:".72rem",fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}}>¿Enviar al jefe para gestión?</span>
+                    <button onClick={()=>{ onCambiarStatusBloque(pv.orders,"revision"); setEnviandoProv(null); }}
+                      style={{background:"#1d4ed8",color:"white",border:"none",borderRadius:7,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                      📋 Sí, enviar
                     </button>
-                    <button onClick={()=>{ setRealizadoProv(null); setRealizadoResp(""); }}
+                    <button onClick={()=>setEnviandoProv(null)}
                       style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"5px 9px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
                   </div>
                 ) : (
-                  <button onClick={()=>{ setRealizadoProv({name:pv.name}); setRealizadoResp(""); }}
-                    style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(194,65,12,.35)",whiteSpace:"nowrap"}}>
-                    📦 Pedido realizado
+                  <button onClick={()=>setEnviandoProv(pv.name)}
+                    style={{background:"linear-gradient(135deg,#60a5fa,#1d4ed8)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(29,78,216,.3)",whiteSpace:"nowrap"}}>
+                    📋 Enviar al jefe
                   </button>
                 )}
               </div>
             </div>
-            {/* Items table */}
             <div style={{overflowX:"auto",borderTop:"1.5px solid var(--border)"}}>
               <table className="ptable" style={{margin:0,borderRadius:0}}>
                 <thead>
@@ -2097,11 +2096,12 @@ function App(){
     recibido: orders.filter(o=>o.status==="recibido").length,
   }),[orders]);
 
+  const STATUS_ORDER = {pendiente:0,revision:1,aprobado:2,proceso:3,realizado:4,recibido:5,rechazado:6};
   const filtered=useMemo(()=>orders.filter(o=>{
     if(filter!=="todos"&&o.status!==filter) return false;
     if(search.trim()){const s=search.toLowerCase();return (o.solicitante||o.responsable||"").toLowerCase().includes(s)||o.proveedor.toLowerCase().includes(s)||o.id.toLowerCase().includes(s)||o.products.some(p=>p.nombre.toLowerCase().includes(s))||((o.proyecto||"").toLowerCase().includes(s));}
     return true;
-  }),[orders,filter,search]);
+  }).sort((a,b)=>(STATUS_ORDER[a.status]??9)-(STATUS_ORDER[b.status]??9)||(new Date(b.date)-new Date(a.date))),[orders,filter,search]);
 
   const addOrder = async o=>{
     const fb=getFB();
@@ -2134,7 +2134,13 @@ function App(){
   const asignarProyecto=async(id,proyecto)=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
-    const nuevoStatus = proyecto ? "proceso" : o?.status||"pendiente";
+    // If assigning project: advance to proceso. If removing: go back to revision if was proceso, else keep status
+    let nuevoStatus = o?.status||"pendiente";
+    if(proyecto) {
+      if(["pendiente","revision","aprobado"].includes(nuevoStatus)) nuevoStatus="proceso";
+    } else {
+      if(nuevoStatus==="proceso") nuevoStatus="revision";
+    }
     if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{proyecto,status:nuevoStatus}); }
     else { setOrders(p=>p.map(x=>x.id===id?{...x,proyecto,status:nuevoStatus}:x)); }
     setSelected(p=>p&&p.id===id?{...p,proyecto,status:nuevoStatus}:p);
@@ -2246,7 +2252,7 @@ function App(){
     {cls:"sc-pink",  emoji:"📋",num:stats.total,    label:"Total pedidos"},
     {cls:"sc-orange",emoji:"⏳",num:stats.pendiente,label:"Pendientes"},
     {cls:"sc-blue",  emoji:"🔄",num:stats.proceso,  label:"En proceso"},
-    {cls:"sc-brown", emoji:"📦",num:stats.realizado,label:"Realizados"},
+    {cls:"sc-yellow",emoji:"📦",num:stats.realizado,label:"Realizados"},
     {cls:"sc-green", emoji:"✅",num:stats.recibido, label:"Recibidos"},
   ];
 
