@@ -468,7 +468,7 @@ function CatTag({cat}){
 
 /* ── NEW REQUEST ── */
 function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=[]}){
-  const [form,setForm]=useState({responsable:"",proveedor:"",category:"",notas:"",proyecto:""});
+  const [form,setForm]=useState({solicitante:"",proveedor:"",category:"",notas:"",proyecto:""});
   const [prods,setProds]=useState([{codigo:"",nombre:"",unidades:1,precio:0,url:""}]);
   const [err,setErr]=useState("");
   const [provOtro,setProvOtro]=useState(false);
@@ -479,13 +479,13 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=
   const sp=(i,k,v)=>setProds(ps=>ps.map((p,idx)=>idx===i?{...p,[k]:v}:p));
   const total=tot(prods);
   const submit=()=>{
-    if(!form.responsable.trim()) return setErr("El campo Responsable es obligatorio.");
+    if(!form.solicitante.trim()) return setErr("El campo Solicitante es obligatorio.");
     if(!form.proveedor.trim())   return setErr("El campo Proveedor es obligatorio.");
     if(!form.category)           return setErr("Selecciona una categoría.");
     if(prods.some(p=>!p.nombre.trim())) return setErr("Completa el nombre de todos los productos.");
     setErr("");
     onSubmit({id:gid(),date:new Date().toISOString().split("T")[0],status:"pendiente",
-      category:form.category,responsable:form.responsable,proveedor:form.proveedor,
+      category:form.category,solicitante:form.solicitante,responsable:"",proveedor:form.proveedor,
       notas:form.notas,proyecto:form.proyecto,products:prods});
   };
   return(
@@ -495,8 +495,8 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=
         {err&&<div className="err-msg">⚠️ {err}</div>}
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Responsable <span className="req">*</span></label>
-            <input className="form-input" placeholder="Tu nombre y apellidos" value={form.responsable} onChange={e=>sf("responsable",e.target.value)}/>
+            <label className="form-label">Solicitante <span className="req">*</span></label>
+            <input className="form-input" placeholder="Tu nombre y apellidos" value={form.solicitante} onChange={e=>sf("solicitante",e.target.value)}/>
           </div>
           <div className="form-group">
             <label className="form-label">Proveedor <span className="req">*</span></label>
@@ -654,7 +654,8 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
         <div className="detail-section">
           <h3>Información</h3>
           <div className="detail-grid">
-            <div className="detail-item"><div className="lbl">Responsable</div><div className="val">{order.responsable}</div></div>
+            <div className="detail-item"><div className="lbl">Solicitante</div><div className="val">{order.solicitante||order.responsable}</div></div>
+            {order.responsable&&<div className="detail-item"><div className="lbl">Responsable pedido</div><div className="val">👤 {order.responsable}</div></div>}
             <div className="detail-item"><div className="lbl">Proveedor</div><div className="val">{order.proveedor}</div></div>
             <div className="detail-item"><div className="lbl">Categoría</div><div className="val"><CatTag cat={order.category}/></div></div>
             {!locked&&order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
@@ -748,7 +749,7 @@ function ProjectView({valid}){
                   </div>
                   <div className="proj-meta">
                     <span>🧾 {p.orders.length} pedido{p.orders.length!==1?"s":""}</span>
-                    <span>👤 {[...new Set(p.orders.map(o=>o.responsable))].slice(0,2).join(", ")}{[...new Set(p.orders.map(o=>o.responsable))].length>2?" +…":""}</span>
+                    <span>👤 {[...new Set(p.orders.map(o=>o.solicitante||o.responsable))].slice(0,2).join(", ")}{[...new Set(p.orders.map(o=>o.solicitante||o.responsable))].length>2?" +…":""}</span>
                   </div>
                   {/* cat color bar */}
                   <div className="proj-cat-bar">
@@ -787,7 +788,7 @@ function ProjectView({valid}){
             <tbody>
               {projects.map(p=>{
                 const pNone=p.name==="__none__";
-                const resps=[...new Set(p.orders.map(o=>o.responsable))];
+                const resps=[...new Set(p.orders.map(o=>o.solicitante||o.responsable))];
                 return(
                   <tr key={p.name}>
                     <td style={{fontWeight:pNone?600:800,color:pNone?"var(--muted)":"var(--navy)",fontStyle:pNone?"italic":"normal"}}>
@@ -1177,7 +1178,8 @@ function MergeBlocksModal({proveedorName, bloques, onClose, onMerge}){
 function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,proveedores=[]}){
   const [splitProv, setSplitProv] = useState(null);
   const [mergeProv, setMergeProv] = useState(null);
-  const [confirmRecibido, setConfirmRecibido] = useState(null); // pv.key
+  const [realizadoProv, setRealizadoProv] = useState(null); // {key, orders} — mini-form
+  const [realizadoResp, setRealizadoResp] = useState(""); // responsable input
   // group by bloque (if set) or proveedor
   const provMap={};
   valid.forEach(o=>{
@@ -1227,7 +1229,10 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
                 )}
               </div>
               <div style={{fontSize:".75rem",color:"var(--muted)",fontWeight:600,marginTop:2}}>
-                {pv.orders.length} solicitud{pv.orders.length!==1?"es":""} · {[...new Set(pv.orders.map(o=>o.responsable))].length} solicitante{[...new Set(pv.orders.map(o=>o.responsable))].length!==1?"s":""}
+                {pv.orders.length} solicitud{pv.orders.length!==1?"es":""} · {[...new Set(pv.orders.map(o=>o.solicitante||o.responsable))].length} solicitante{[...new Set(pv.orders.map(o=>o.solicitante||o.responsable))].length!==1?"s":""}
+                {pv.orders[0]?.responsable && pv.orders.some(o=>LOCKED_STATUSES.includes(o.status)) && (
+                  <span style={{marginLeft:8,color:"var(--navy)",fontWeight:700}}>· 👤 Resp: <b>{pv.orders[0].responsable}</b></span>
+                )}
               </div>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -1273,17 +1278,26 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
                       style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(249,115,22,.35)",whiteSpace:"nowrap"}}
                     >✂️ Dividir</button>
                   )}
-                  {/* Marcar realizado — con confirmación inline */}
+                  {/* Marcar realizado — abre mini-form con campo responsable */}
                   {pv.orders.some(o=>o.status!=="realizado"&&o.status!=="recibido") ? (
-                    confirmRecibido===pv.key
-                      ? <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:9,padding:"5px 10px"}}>
-                          <span style={{fontSize:".72rem",fontWeight:700,color:"#c2410c"}}>¿Marcar todo como realizado?</span>
-                          <button onClick={()=>{ onCambiarStatusBloque(pv.orders,"realizado"); setConfirmRecibido(null); }}
-                            style={{background:"#c2410c",color:"white",border:"none",borderRadius:7,padding:"4px 10px",fontSize:".72rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>📦 Sí</button>
-                          <button onClick={()=>setConfirmRecibido(null)}
-                            style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"4px 8px",fontSize:".72rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>No</button>
+                    realizadoProv?.key===pv.key
+                      ? <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:9,padding:"6px 10px",flexWrap:"wrap"}}>
+                          <span style={{fontSize:".72rem",fontWeight:700,color:"#c2410c",whiteSpace:"nowrap"}}>👤 Responsable del pedido:</span>
+                          <input
+                            autoFocus
+                            value={realizadoResp}
+                            onChange={e=>setRealizadoResp(e.target.value)}
+                            placeholder="Nombre y apellidos…"
+                            style={{padding:"4px 9px",border:"1.5px solid #fed7aa",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".78rem",fontWeight:700,outline:"none",minWidth:160}}
+                          />
+                          <button
+                            onClick={()=>{ if(!realizadoResp.trim()) return; onCambiarStatusBloque(realizadoProv.orders,"realizado",realizadoResp.trim()); setRealizadoProv(null); setRealizadoResp(""); }}
+                            disabled={!realizadoResp.trim()}
+                            style={{background:realizadoResp.trim()?"#c2410c":"#e5e7eb",color:"white",border:"none",borderRadius:7,padding:"4px 10px",fontSize:".72rem",fontWeight:800,cursor:realizadoResp.trim()?"pointer":"default",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>📦 Confirmar</button>
+                          <button onClick={()=>{ setRealizadoProv(null); setRealizadoResp(""); }}
+                            style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"4px 8px",fontSize:".72rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
                         </div>
-                      : <button onClick={()=>setConfirmRecibido(pv.key)}
+                      : <button onClick={()=>{ setRealizadoProv({key:pv.key, orders:pv.orders}); setRealizadoResp(""); }}
                           style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(194,65,12,.35)",whiteSpace:"nowrap"}}>
                           📦 Pedido realizado
                         </button>
@@ -1324,7 +1338,7 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
                     <td style={{fontWeight:800}}>{p.nombre}</td>
                     <td style={{color:"var(--muted)",fontSize:".78rem"}}>{p.codigo||"—"}</td>
                     <td>{p.url?<a href={p.url} target="_blank" rel="noreferrer" style={{color:"var(--accent)",fontSize:".75rem",fontWeight:700,textDecoration:"none"}}>🔗 Ver</a>:"—"}</td>
-                    <td style={{fontSize:".8rem",color:"var(--muted)",fontWeight:700}}>{o.responsable}</td>
+                    <td style={{fontSize:".8rem",color:"var(--muted)",fontWeight:700}}>{o.solicitante||o.responsable}</td>
                     <td style={{fontSize:".78rem",color:"var(--muted)",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={o.notas||""}>{o.notas||"—"}</td>
                     <td style={{textAlign:"right"}}>{p.unidades}</td>
                     <td style={{textAlign:"right"}}>{eur(p.precio)}</td>
@@ -1950,7 +1964,7 @@ function App(){
 
   const filtered=useMemo(()=>orders.filter(o=>{
     if(filter!=="todos"&&o.status!==filter) return false;
-    if(search.trim()){const s=search.toLowerCase();return o.responsable.toLowerCase().includes(s)||o.proveedor.toLowerCase().includes(s)||o.id.toLowerCase().includes(s)||o.products.some(p=>p.nombre.toLowerCase().includes(s))||((o.proyecto||"").toLowerCase().includes(s));}
+    if(search.trim()){const s=search.toLowerCase();return (o.solicitante||o.responsable||"").toLowerCase().includes(s)||o.proveedor.toLowerCase().includes(s)||o.id.toLowerCase().includes(s)||o.products.some(p=>p.nombre.toLowerCase().includes(s))||((o.proyecto||"").toLowerCase().includes(s));}
     return true;
   }),[orders,filter,search]);
 
@@ -1967,11 +1981,12 @@ function App(){
     else { setOrders(p=>p.map(o=>o.id===id?{...o,status:st}:o)); }
     setSelected(p=>p&&p.id===id?{...p,status:st}:p);
   };
-  const cambiarStatusBloque=async(bloqueOrders, st)=>{
+  const cambiarStatusBloque=async(bloqueOrders, st, responsable)=>{
     const fb=getFB();
+    const extra = responsable ? {status:st, responsable} : {status:st};
     for(const o of bloqueOrders){
-      if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{status:st}); }
-      else { setOrders(p=>p.map(x=>x.id===o.id?{...x,status:st}:x)); }
+      if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), extra); }
+      else { setOrders(p=>p.map(x=>x.id===o.id?{...x,...extra}:x)); }
     }
   };
   const deleteOrder=async(id)=>{
@@ -2180,7 +2195,8 @@ function App(){
                         <span className="order-date">{fmt(o.date)}</span>
                       </div>
                       <div className="order-info">
-                        <span>Responsable <b>{o.responsable}</b></span>
+                        <span>Solicitante <b>{o.solicitante||o.responsable}</b></span>
+                        {o.responsable&&<span>Responsable <b>{o.responsable}</b></span>}
                         <span>Proveedor <b>{o.proveedor}</b></span>
                         <span>Artículos <b>{o.products.length}</b></span>
                       </div>
