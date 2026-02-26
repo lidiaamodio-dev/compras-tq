@@ -69,29 +69,33 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .tab-btn.act { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 8px rgba(108,99,255,.3); }
 
 /* ── STAT CARDS ── */
-.stats-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 14px; margin-bottom: 2rem; }
+.stats-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 14px; margin-bottom: 2rem; }
 .stat-card { border-radius: var(--radius); padding: 1.2rem 1.3rem 1rem; border: 1.5px solid transparent; display: flex; flex-direction: column; gap: 10px; transition: transform .2s,box-shadow .2s; }
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .sc-pink   { background: #fff0f6; border-color: #ffd6e8; }
 .sc-orange { background: #fff8ed; border-color: #fde8c8; }
 .sc-blue   { background: #eef4ff; border-color: #c7d9ff; }
 .sc-green  { background: #edfff5; border-color: #a7f3cc; }
+.sc-brown  { background: #fff7ed; border-color: #fed7aa; }
 .stat-row { display: flex; justify-content: space-between; align-items: flex-start; }
 .stat-num { font-size: 2.4rem; font-weight: 900; line-height: 1; letter-spacing: -2px; }
 .sc-pink .stat-num   { color: #db2777; }
 .sc-orange .stat-num { color: #ea580c; }
 .sc-blue .stat-num   { color: #2563eb; }
 .sc-green .stat-num  { color: #16a34a; }
+.sc-brown .stat-num  { color: #c2410c; }
 .stat-icon-pill { padding: 5px 10px; border-radius: 20px; font-size: .75rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
 .sc-pink .stat-icon-pill   { background: #fce7f3; color: #be185d; }
 .sc-orange .stat-icon-pill { background: #ffedd5; color: #c2410c; }
 .sc-blue .stat-icon-pill   { background: #dbeafe; color: #1d4ed8; }
 .sc-green .stat-icon-pill  { background: #dcfce7; color: #15803d; }
+.sc-brown .stat-icon-pill  { background: #ffedd5; color: #c2410c; }
 .stat-label { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .sc-pink .stat-label   { color: #db2777; }
 .sc-orange .stat-label { color: #ea580c; }
 .sc-blue .stat-label   { color: #2563eb; }
 .sc-green .stat-label  { color: #16a34a; }
+.sc-brown .stat-label  { color: #c2410c; }
 
 /* ── PRODUCT CATALOG ── */
 .catalog-overlay { position:fixed; inset:0; background:rgba(45,58,94,.5); z-index:300; display:flex; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px); }
@@ -598,6 +602,7 @@ function LoginModal({onClose,onSuccess}){
 }
 
 /* ── ORDER DETAIL ── */
+const LOCKED_STATUSES = ["realizado","recibido","rechazado"];
 function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto}){
   const [confirmDel,setConfirmDel]=useState(false);
   const total=tot(order.products);
@@ -806,7 +811,7 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,proveedores=[]}){
+function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,proveedores=[]}){
   const [dashTab,setDashTab]=useState("gasto");
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
@@ -859,7 +864,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnir
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} proveedores={proveedores}/>
+        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -1159,7 +1164,7 @@ function MergeBlocksModal({proveedorName, bloques, onClose, onMerge}){
 }
 
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,proveedores=[]}){
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,proveedores=[]}){
   const [splitProv, setSplitProv] = useState(null);
   const [mergeProv, setMergeProv] = useState(null);
   const [confirmRecibido, setConfirmRecibido] = useState(null); // pv.key
@@ -1219,16 +1224,27 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
               <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
                 <div style={{fontSize:".68rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"var(--accent)"}}>📁 Asignar proyecto al pedido</div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <select
-                    className="form-input"
-                    style={{minWidth:200,fontSize:".85rem",padding:"7px 30px 7px 11px"}}
-                    value={pv.orders[0]?.proyecto||""}
-                    onChange={e=>{ pv.orders.forEach(o=>onAsignarProyecto(o.id,e.target.value)); }}
-                  >
-                    <option value="">— Sin proyecto —</option>
-                    {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}{p.desc?" · "+p.desc:""}</option>)}
-                  </select>
-                  {pv.orders[0]?.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"4px 12px",borderRadius:20,fontSize:".75rem",fontWeight:800,whiteSpace:"nowrap"}}>📁 {pv.orders[0].proyecto}</span>}
+                  {(()=>{
+                    const bloqueado = !isAdmin && pv.orders.some(o=>LOCKED_STATUSES.includes(o.status));
+                    return bloqueado ? (
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{background:"#fef9c3",color:"#92400e",border:"1.5px solid #fde68a",borderRadius:10,padding:"6px 14px",fontSize:".82rem",fontWeight:800,display:"flex",alignItems:"center",gap:6}}>
+                          🔒 {pv.orders[0]?.proyecto||"Sin proyecto"}
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        className="form-input"
+                        style={{minWidth:200,fontSize:".85rem",padding:"7px 30px 7px 11px"}}
+                        value={pv.orders[0]?.proyecto||""}
+                        onChange={e=>{ pv.orders.forEach(o=>onAsignarProyecto(o.id,e.target.value)); }}
+                      >
+                        <option value="">— Sin proyecto —</option>
+                        {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}{p.desc?" · "+p.desc:""}</option>)}
+                      </select>
+                    );
+                  })()}
+                  {!LOCKED_STATUSES.includes(pv.orders[0]?.status)&&pv.orders[0]?.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"4px 12px",borderRadius:20,fontSize:".75rem",fontWeight:800,whiteSpace:"nowrap"}}>📁 {pv.orders[0].proyecto}</span>}
                 </div>
                 {pv.orders[0]?.proyecto&&<div style={{fontSize:".68rem",color:"#15803d",fontWeight:700}}>✅ Pedidos en proceso</div>}
               </div>
@@ -1918,6 +1934,7 @@ function App(){
     total:    orders.length,
     pendiente:orders.filter(o=>o.status==="pendiente").length,
     proceso:  orders.filter(o=>o.status==="proceso").length,
+    realizado:orders.filter(o=>o.status==="realizado").length,
     recibido: orders.filter(o=>o.status==="recibido").length,
   }),[orders]);
 
@@ -2069,6 +2086,7 @@ function App(){
     {cls:"sc-pink",  emoji:"📋",num:stats.total,    label:"Total pedidos"},
     {cls:"sc-orange",emoji:"⏳",num:stats.pendiente,label:"Pendientes"},
     {cls:"sc-blue",  emoji:"🔄",num:stats.proceso,  label:"En proceso"},
+    {cls:"sc-brown", emoji:"📦",num:stats.realizado,label:"Realizados"},
     {cls:"sc-green", emoji:"✅",num:stats.recibido, label:"Recibidos"},
   ];
 
@@ -2122,7 +2140,7 @@ function App(){
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} proveedores={proveedores}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
           : (
           <>
             <div className="filters-section">
