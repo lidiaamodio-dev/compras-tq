@@ -171,6 +171,34 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 /* select styled */
 select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238f96b3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
 
+/* ── SPLIT ORDER MODAL ── */
+.split-overlay { position:fixed; inset:0; background:rgba(45,58,94,.55); z-index:400; display:flex; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px); }
+.split-modal { background:white; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.22); width:100%; max-width:800px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+.split-head { padding:1.25rem 1.5rem 1rem; border-bottom:1.5px solid var(--border); }
+.split-head h3 { font-size:1.1rem; font-weight:900; color:var(--navy); margin:0 0 4px; }
+.split-head p  { font-size:.78rem; color:var(--muted); font-weight:600; margin:0; }
+.split-body { flex:1; overflow-y:auto; padding:1rem 1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.split-col { border:1.5px solid var(--border); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; }
+.split-col-head { padding:.75rem 1rem .7rem; display:flex; flex-direction:column; gap:7px; }
+.split-col-a { background:#f0f4ff; border-bottom:1.5px solid #c7d9ff; }
+.split-col-b { background:#fff3f0; border-bottom:1.5px solid #ffd6c8; }
+.split-col-title { font-size:.85rem; font-weight:900; color:var(--navy); }
+.split-col-proj select { width:100%; font-size:.78rem; padding:5px 28px 5px 9px; border:1.5px solid var(--border); border-radius:8px; font-family:'Nunito',sans-serif; font-weight:700; background-color:white; outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238f96b3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; cursor:pointer; }
+.split-items { padding:.5rem; display:flex; flex-direction:column; gap:4px; min-height:60px; flex:1; }
+.split-item-row { display:flex; align-items:center; gap:8px; padding:.55rem .7rem; border-radius:9px; border:1.5px solid var(--border); background:white; cursor:pointer; transition:all .13s; user-select:none; }
+.split-item-row:hover { border-color:var(--accent); background:#f9f8ff; }
+.split-item-row.in-a { border-color:#6c63ff55; background:#f3f0ff; }
+.split-item-row.in-b { border-color:#f9731688; background:#fff7f3; }
+.split-item-name { flex:1; font-size:.8rem; font-weight:800; color:var(--navy); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.split-item-meta { font-size:.72rem; color:var(--muted); font-weight:600; white-space:nowrap; }
+.split-item-arrow { font-size:.82rem; flex-shrink:0; }
+.split-col-total { padding:.4rem 1rem .75rem; font-size:.78rem; font-weight:800; color:var(--accent); text-align:right; }
+.split-empty { text-align:center; padding:1.5rem .5rem; color:var(--muted); font-size:.75rem; font-weight:600; }
+.split-unassigned { padding:.5rem; }
+.split-unassigned-label { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:6px; padding:0 .2rem; }
+.split-foot { padding:1rem 1.5rem; border-top:1.5px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.split-foot-hint { font-size:.75rem; color:var(--muted); font-weight:600; }
+
 /* ── FILTERS ── */
 .filters-section { margin-bottom: 1.25rem; }
 .search-wrap { position: relative; margin-bottom: 12px; }
@@ -778,7 +806,7 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders,proyectos=[],onAsignarProyecto,proveedores=[]}){
+function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,proveedores=[]}){
   const [dashTab,setDashTab]=useState("gasto");
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
@@ -831,7 +859,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,proveedores=[]}){
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} proveedores={proveedores}/>
+        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} proveedores={proveedores}/>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -902,8 +930,155 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,proveedores=[]}){
   );
 }
 
+/* ── SPLIT ORDER MODAL ── */
+function SplitOrderModal({orders, proveedorName, proyectos, onClose, onSplit}){
+  // Build a flat list of items: {orderId, productIndex, product, order}
+  const allItems = orders.flatMap(o=>
+    o.products.map((p,pi)=>({key:o.id+"-"+pi, orderId:o.id, pi, product:p, order:o}))
+  );
+
+  // assignment: null = unassigned, "A" or "B"
+  const [assignment, setAssignment] = useState({});
+  const [projA, setProjA] = useState(orders[0]?.proyecto||"");
+  const [projB, setProjB] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key)=>{
+    setAssignment(prev=>{
+      const cur = prev[key];
+      if(!cur) return {...prev,[key]:"A"};
+      if(cur==="A") return {...prev,[key]:"B"};
+      return {...prev,[key]:null};
+    });
+  };
+
+  const itemsA = allItems.filter(i=>assignment[i.key]==="A");
+  const itemsB = allItems.filter(i=>assignment[i.key]==="B");
+  const unassigned = allItems.filter(i=>!assignment[i.key]);
+
+  const totalA = itemsA.reduce((s,i)=>s+i.product.unidades*i.product.precio,0);
+  const totalB = itemsB.reduce((s,i)=>s+i.product.unidades*i.product.precio,0);
+
+  const canSave = itemsA.length>0 && itemsB.length>0;
+
+  const handleSave = async()=>{
+    if(!canSave) return;
+    setSaving(true);
+    await onSplit({orders, itemsA, itemsB, projA, projB, unassigned, assignment, allItems});
+    setSaving(false);
+    onClose();
+  };
+
+  const renderItem = (item)=>{
+    const asgn = assignment[item.key];
+    return(
+      <div key={item.key}
+        className={`split-item-row${asgn==="A"?" in-a":asgn==="B"?" in-b":""}`}
+        onClick={()=>toggle(item.key)}
+        title="Haz clic para mover: Sin asignar → Pedido A → Pedido B → Sin asignar"
+      >
+        <span className="split-item-arrow">
+          {!asgn?"○":asgn==="A"?"🔵":"🟠"}
+        </span>
+        <span className="split-item-name">{item.product.nombre}</span>
+        <span className="split-item-meta">{item.product.unidades}× {eur(item.product.precio)}</span>
+        <span className="split-item-meta" style={{color:"var(--accent)",fontWeight:800,minWidth:60,textAlign:"right"}}>{eur(item.product.unidades*item.product.precio)}</span>
+      </div>
+    );
+  };
+
+  return(
+    <div className="split-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="split-modal">
+        <div className="split-head">
+          <h3>✂️ Dividir pedido — 🏪 {proveedorName}</h3>
+          <p>Haz clic en cada artículo para asignarlo al Pedido A (🔵) o Pedido B (🟠). Los artículos sin asignar se quedarán en el pedido A.</p>
+        </div>
+        <div className="split-body">
+          {/* Column A */}
+          <div className="split-col">
+            <div className="split-col-head split-col-a">
+              <div className="split-col-title">🔵 Pedido A</div>
+              <div className="split-col-proj">
+                <select value={projA} onChange={e=>setProjA(e.target.value)}>
+                  <option value="">— Sin proyecto —</option>
+                  {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="split-items">
+              {itemsA.length===0 && unassigned.length===0
+                ? <div className="split-empty">Sin artículos</div>
+                : <>
+                    {itemsA.map(renderItem)}
+                    {unassigned.map(i=>(
+                      <div key={i.key}
+                        className="split-item-row"
+                        onClick={()=>toggle(i.key)}
+                        style={{opacity:.55}}
+                        title="Sin asignar — irá al Pedido A por defecto"
+                      >
+                        <span className="split-item-arrow">○</span>
+                        <span className="split-item-name">{i.product.nombre}</span>
+                        <span className="split-item-meta">{i.product.unidades}× {eur(i.product.precio)}</span>
+                        <span className="split-item-meta" style={{color:"var(--muted)",minWidth:60,textAlign:"right"}}>{eur(i.product.unidades*i.product.precio)}</span>
+                      </div>
+                    ))}
+                  </>
+              }
+            </div>
+            <div className="split-col-total">
+              Total: {eur(totalA + unassigned.reduce((s,i)=>s+i.product.unidades*i.product.precio,0))}
+            </div>
+          </div>
+
+          {/* Column B */}
+          <div className="split-col">
+            <div className="split-col-head split-col-b">
+              <div className="split-col-title">🟠 Pedido B <span style={{fontSize:".7rem",fontWeight:600,color:"var(--muted)"}}>— nuevo</span></div>
+              <div className="split-col-proj">
+                <select value={projB} onChange={e=>setProjB(e.target.value)}>
+                  <option value="">— Sin proyecto —</option>
+                  {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="split-items">
+              {itemsB.length===0
+                ? <div className="split-empty">Haz clic en artículos para añadirlos aquí</div>
+                : itemsB.map(renderItem)
+              }
+            </div>
+            <div className="split-col-total">
+              {itemsB.length>0 ? "Total: "+eur(totalB) : ""}
+            </div>
+          </div>
+        </div>
+
+        <div className="split-foot">
+          <div className="split-foot-hint">
+            {!canSave
+              ? "⚠️ Asigna al menos 1 artículo al Pedido B para poder dividir"
+              : `✅ Pedido A: ${itemsA.length+unassigned.length} art. · Pedido B: ${itemsB.length} art.`}
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button className="btn-sec" onClick={onClose}>Cancelar</button>
+            <button
+              className="btn-primary"
+              style={{opacity:canSave?1:.5,cursor:canSave?"pointer":"not-allowed",background:"linear-gradient(135deg,#f97316,#ea580c)"}}
+              onClick={handleSave}
+              disabled={!canSave||saving}
+            >{saving?"Guardando…":"✂️ Dividir pedido"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid,proyectos=[],onAsignarProyecto,proveedores=[]}){
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,proveedores=[]}){
+  const [splitProv, setSplitProv] = useState(null); // {name, orders}
   // group by proveedor
   const provMap={};
   valid.forEach(o=>{
@@ -952,10 +1127,18 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,proveedores=[]}){
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
                 <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
-                <button
-                  onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===pv.name.toLowerCase()); generatePedidoExcel(pv.name, pv.orders, dbProv||null); }}
-                  style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(34,197,94,.35)",whiteSpace:"nowrap"}}
-                >📥 Descargar Excel</button>
+                <div style={{display:"flex",gap:7}}>
+                  {pv.orders.reduce((s,o)=>s+o.products.length,0)>1&&(
+                    <button
+                      onClick={()=>setSplitProv({name:pv.name,orders:pv.orders})}
+                      style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(249,115,22,.35)",whiteSpace:"nowrap"}}
+                    >✂️ Dividir</button>
+                  )}
+                  <button
+                    onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===pv.name.toLowerCase()); generatePedidoExcel(pv.name, pv.orders, dbProv||null); }}
+                    style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(34,197,94,.35)",whiteSpace:"nowrap"}}
+                  >📥 Descargar Excel</button>
+                </div>
               </div>
             </div>
           </div>
@@ -997,6 +1180,15 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,proveedores=[]}){
           </table>
         </div>
       ))}
+      {splitProv&&(
+        <SplitOrderModal
+          orders={splitProv.orders}
+          proveedorName={splitProv.name}
+          proyectos={proyectos}
+          onClose={()=>setSplitProv(null)}
+          onSplit={onDividirPedido}
+        />
+      )}
     </div>
   );
 }
@@ -1620,6 +1812,59 @@ function App(){
     setSelected(p=>p&&p.id===id?{...p,proyecto,status:nuevoStatus}:p);
   };
 
+  const dividirPedido=async({orders:srcOrders, itemsA, itemsB, projA, projB, unassigned, allItems})=>{
+    const fb=getFB();
+    const now=new Date().toISOString();
+    // Build product list for each split
+    // Items A = explicitly assigned A + unassigned (they default to A)
+    const prodsA=[...itemsA,...unassigned].map(i=>i.product);
+    const prodsB=itemsB.map(i=>i.product);
+    if(prodsA.length===0||prodsB.length===0) return;
+
+    // The first original order acts as base for metadata
+    const base=srcOrders[0];
+
+    // Generate new IDs
+    const ts=Date.now();
+    const idA="PED-"+String(ts).slice(-6)+"A";
+    const idB="PED-"+String(ts+1).slice(-6)+"B";
+
+    const orderA={
+      id:idA, date:now,
+      responsable:base.responsable,
+      proveedor:base.proveedor,
+      category:base.category,
+      notas:(base.notas||"")+(projA?" [División A]":""),
+      status:projA?"proceso":"pendiente",
+      proyecto:projA||"",
+      products:prodsA,
+    };
+    const orderB={
+      id:idB, date:now,
+      responsable:base.responsable,
+      proveedor:base.proveedor,
+      category:base.category,
+      notas:(base.notas||"")+(projB?" [División B]":""),
+      status:projB?"proceso":"pendiente",
+      proyecto:projB||"",
+      products:prodsB,
+    };
+
+    // Delete original orders and add the two new ones
+    if(fb){
+      for(const o of srcOrders){
+        if(o._docId) await fb.deleteDoc(fb.doc(fb.db,"orders",o._docId));
+      }
+      await fb.addDoc(fb.collection(fb.db,"orders"),orderA);
+      await fb.addDoc(fb.collection(fb.db,"orders"),orderB);
+    } else {
+      setOrders(prev=>{
+        const filtered=prev.filter(o=>!srcOrders.find(s=>s.id===o.id));
+        return [orderA,orderB,...filtered];
+      });
+    }
+  };
+
   const SCARDS=[
     {cls:"sc-pink",  emoji:"📋",num:stats.total,    label:"Total pedidos"},
     {cls:"sc-orange",emoji:"⏳",num:stats.pendiente,label:"Pendientes"},
@@ -1677,7 +1922,7 @@ function App(){
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} proveedores={proveedores}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} proveedores={proveedores}/>
           : (
           <>
             <div className="filters-section">
