@@ -1079,16 +1079,30 @@ function SplitOrderModal({orders, proveedorName, proyectos, onClose, onSplit}){
 /* ── PROVEEDOR VIEW ── */
 function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,proveedores=[]}){
   const [splitProv, setSplitProv] = useState(null); // {name, orders}
-  // group by proveedor
+  // group by bloque (if set) or proveedor — so split blocks appear separately
   const provMap={};
   valid.forEach(o=>{
-    const k=o.proveedor||"Sin proveedor";
+    const k = o.bloque || o.proveedor || "Sin proveedor";
     if(!provMap[k]) provMap[k]=[];
     provMap[k].push(o);
   });
   const pvList=Object.entries(provMap)
-    .map(([name,orders])=>({name,orders,total:orders.reduce((s,o)=>s+tot(o.products),0)}))
-    .sort((a,b)=>b.total-a.total);
+    .map(([key,orders])=>({
+      key,
+      // Display name: if bloque, show "PROVEEDOR · Bloque N", else just proveedor
+      name: orders[0].proveedor || key,
+      bloque: orders[0].bloque || null,
+      bloqueLabel: orders[0].bloque
+        ? orders[0].bloque.replace(orders[0].proveedor,"").replace(/^ · /,"")
+        : null,
+      orders,
+      total:orders.reduce((s,o)=>s+tot(o.products),0)
+    }))
+    .sort((a,b)=>{
+      // Group same proveedor together, then by bloque number
+      if(a.name!==b.name) return b.total-a.total;
+      return (a.bloqueLabel||"").localeCompare(b.bloqueLabel||"");
+    });
 
   if(pvList.length===0) return(
     <div className="dash-section"><div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600}}>No hay pedidos todavía.</div></div>
@@ -1097,11 +1111,16 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
   return(
     <div>
       {pvList.map(pv=>(
-        <div key={pv.name} className="dash-section" style={{marginBottom:"1rem"}}>
+        <div key={pv.key} className="dash-section" style={{marginBottom:"1rem"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1rem",flexWrap:"wrap",gap:12}}>
             <div>
-              <div style={{fontWeight:900,fontSize:"1.05rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{fontWeight:900,fontSize:"1.05rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                 🏪 {pv.name}
+                {pv.bloqueLabel&&(
+                  <span style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",fontSize:".72rem",fontWeight:800,padding:"3px 10px",borderRadius:20,letterSpacing:".02em"}}>
+                    ✂️ {pv.bloqueLabel}
+                  </span>
+                )}
               </div>
               <div style={{fontSize:".75rem",color:"var(--muted)",fontWeight:600,marginTop:2}}>
                 {pv.orders.length} solicitud{pv.orders.length!==1?"es":""} · {[...new Set(pv.orders.map(o=>o.responsable))].length} solicitante{[...new Set(pv.orders.map(o=>o.responsable))].length!==1?"s":""}
@@ -1130,7 +1149,7 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
                 <div style={{display:"flex",gap:7}}>
                   {pv.orders.reduce((s,o)=>s+o.products.length,0)>1&&(
                     <button
-                      onClick={()=>setSplitProv({name:pv.name,orders:pv.orders})}
+                      onClick={()=>setSplitProv({name:pv.name, bloque:pv.bloqueLabel, orders:pv.orders})}
                       style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(249,115,22,.35)",whiteSpace:"nowrap"}}
                     >✂️ Dividir</button>
                   )}
@@ -1173,7 +1192,7 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan="7" style={{textAlign:"right",fontWeight:800,fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em",color:"var(--muted)"}}>Total {pv.name}</td>
+                <td colSpan="7" style={{textAlign:"right",fontWeight:800,fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em",color:"var(--muted)"}}>Total {pv.bloqueLabel ? pv.name+" · "+pv.bloqueLabel : pv.name}</td>
                 <td style={{textAlign:"right",fontWeight:900,color:"var(--accent)",fontSize:"1rem"}}>{eur(pv.total)}</td>
               </tr>
             </tfoot>
@@ -1183,7 +1202,7 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,pro
       {splitProv&&(
         <SplitOrderModal
           orders={splitProv.orders}
-          proveedorName={splitProv.name}
+          proveedorName={splitProv.bloque ? splitProv.name+" · "+splitProv.bloque : splitProv.name}
           proyectos={proyectos}
           onClose={()=>setSplitProv(null)}
           onSplit={onDividirPedido}
@@ -1815,26 +1834,43 @@ function App(){
   const dividirPedido=async({orders:srcOrders, itemsA, itemsB, projA, projB, unassigned, allItems})=>{
     const fb=getFB();
     const now=new Date().toISOString();
-    // Build product list for each split
-    // Items A = explicitly assigned A + unassigned (they default to A)
     const prodsA=[...itemsA,...unassigned].map(i=>i.product);
     const prodsB=itemsB.map(i=>i.product);
     if(prodsA.length===0||prodsB.length===0) return;
 
-    // The first original order acts as base for metadata
     const base=srcOrders[0];
-
-    // Generate new IDs
     const ts=Date.now();
     const idA="PED-"+String(ts).slice(-6)+"A";
     const idB="PED-"+String(ts+1).slice(-6)+"B";
 
+    // Determine block names: if already a block, subdivide it
+    const baseBloque = base.bloque || base.proveedor;
+    // Strip existing " · Bloque X" suffix to get the root proveedor name
+    const rootProv = base.proveedor;
+    // Count existing blocks for this proveedor to name the new ones
+    const existingBloques = [...new Set(
+      orders.filter(o=>o.proveedor===rootProv && o.bloque)
+             .map(o=>o.bloque)
+    )];
+    // Find a base number: if splitting a block that already has a number, branch from it
+    const bloqueBase = base.bloque
+      ? base.bloque.replace(/ · Bloque .*/,"")
+      : rootProv;
+    // Find next available block numbers
+    const allBloqueNums = orders
+      .filter(o=>o.proveedor===rootProv)
+      .map(o=>{ const m=(o.bloque||"").match(/Bloque (\d+)$/); return m?parseInt(m[1]):0; });
+    const maxN = allBloqueNums.length>0 ? Math.max(...allBloqueNums) : 0;
+    const bloqueA = rootProv+" · Bloque "+(maxN+1);
+    const bloqueB = rootProv+" · Bloque "+(maxN+2);
+
     const orderA={
       id:idA, date:now,
       responsable:base.responsable,
-      proveedor:base.proveedor,
+      proveedor:rootProv,
+      bloque:bloqueA,
       category:base.category,
-      notas:(base.notas||"")+(projA?" [División A]":""),
+      notas:base.notas||"",
       status:projA?"proceso":"pendiente",
       proyecto:projA||"",
       products:prodsA,
@@ -1842,15 +1878,15 @@ function App(){
     const orderB={
       id:idB, date:now,
       responsable:base.responsable,
-      proveedor:base.proveedor,
+      proveedor:rootProv,
+      bloque:bloqueB,
       category:base.category,
-      notas:(base.notas||"")+(projB?" [División B]":""),
+      notas:base.notas||"",
       status:projB?"proceso":"pendiente",
       proyecto:projB||"",
       products:prodsB,
     };
 
-    // Delete original orders and add the two new ones
     if(fb){
       for(const o of srcOrders){
         if(o._docId) await fb.deleteDoc(fb.doc(fb.db,"orders",o._docId));
