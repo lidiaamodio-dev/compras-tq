@@ -543,6 +543,7 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=
       </div>
     </div>
     {showCatalog&&<CatalogModal catalogo={catalogo} onClose={()=>setShowCatalog(false)} onAdd={addFromCatalog}/>}
+  </div>
   );
 }
 
