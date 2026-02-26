@@ -93,6 +93,33 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .sc-blue .stat-label   { color: #2563eb; }
 .sc-green .stat-label  { color: #16a34a; }
 
+/* ── PRODUCT CATALOG ── */
+.catalog-overlay { position:fixed; inset:0; background:rgba(45,58,94,.5); z-index:300; display:flex; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px); }
+.catalog-modal { background:white; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.2); width:100%; max-width:700px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+.catalog-head { padding:1.25rem 1.5rem 1rem; border-bottom:1.5px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.catalog-head h3 { font-size:1.05rem; font-weight:900; color:var(--navy); margin:0; }
+.catalog-search { flex:1; min-width:180px; position:relative; }
+.catalog-search input { width:100%; padding:7px 12px 7px 32px; border:1.5px solid var(--border); border-radius:10px; font-family:'Nunito',sans-serif; font-size:.85rem; font-weight:600; outline:none; }
+.catalog-search input:focus { border-color:var(--accent); }
+.catalog-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:.85rem; }
+.catalog-body { overflow-y:auto; flex:1; padding:.75rem 1rem; }
+.catalog-item { display:flex; align-items:center; gap:10px; padding:.75rem .9rem; border-radius:12px; border:1.5px solid var(--border); margin-bottom:7px; cursor:pointer; transition:all .15s; background:white; }
+.catalog-item:hover { border-color:var(--accent); background:#f9f8ff; transform:translateX(2px); }
+.catalog-item.selected { border-color:var(--accent); background:#f3f0ff; }
+.catalog-item-info { flex:1; min-width:0; }
+.catalog-item-name { font-weight:800; font-size:.88rem; color:var(--navy); }
+.catalog-item-meta { font-size:.72rem; color:var(--muted); font-weight:600; margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; }
+.catalog-item-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.75rem; flex-shrink:0; transition:all .15s; }
+.catalog-item.selected .catalog-item-check { background:var(--accent); border-color:var(--accent); color:white; }
+.catalog-foot { padding:.9rem 1.5rem; border-top:1.5px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.catalog-selected-count { font-size:.82rem; font-weight:700; color:var(--accent); }
+.fetch-btn { background:#f0fdf4; color:#15803d; border:1.5px solid #86efac; border-radius:8px; padding:4px 10px; font-size:.72rem; font-weight:800; cursor:pointer; font-family:'Nunito',sans-serif; display:flex; align-items:center; gap:4px; transition:all .15s; white-space:nowrap; }
+.fetch-btn:hover { background:#dcfce7; }
+.fetch-btn.loading { opacity:.6; cursor:wait; }
+.suggest-box { position:absolute; top:100%; left:0; right:0; background:white; border:1.5px solid var(--border); border-radius:10px; box-shadow:var(--shadow-md); z-index:50; max-height:200px; overflow-y:auto; margin-top:3px; }
+.suggest-item { padding:8px 12px; font-size:.82rem; font-weight:700; color:var(--navy); cursor:pointer; display:flex; align-items:center; gap:8px; }
+.suggest-item:hover { background:#f3f0ff; }
+
 /* ── PROVIDER DATABASE ── */
 .pdb-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(320px,1fr)); gap: 14px; margin-bottom: 1.5rem; }
 .pdb-card { background: white; border-radius: 14px; border: 1.5px solid var(--border); box-shadow: var(--shadow); overflow: hidden; transition: box-shadow .18s,transform .18s; }
@@ -408,12 +435,15 @@ function CatTag({cat}){
 }
 
 /* ── NEW REQUEST ── */
-function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[]}){
+function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=[]}){
   const [form,setForm]=useState({responsable:"",proveedor:"",category:"",notas:"",proyecto:""});
   const [prods,setProds]=useState([{codigo:"",nombre:"",unidades:1,precio:0,url:""}]);
   const [err,setErr]=useState("");
-  const [provOtro,setProvOtro]=useState(false); // true = writing custom name
+  const [provOtro,setProvOtro]=useState(false);
+  const [showCatalog,setShowCatalog]=useState(false);
+  const [suggest,setSuggest]=useState([]); // autocomplete suggestions
   const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const addFromCatalog=items=>{ setProds(ps=>{ const base=ps.filter(p=>p.nombre.trim()); return [...base,...items]; }); };
   const sp=(i,k,v)=>setProds(ps=>ps.map((p,idx)=>idx===i?{...p,[k]:v}:p));
   const total=tot(prods);
   const submit=()=>{
@@ -470,9 +500,12 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[]}){
           <textarea className="form-input" placeholder="Indica el uso: p.ej. síntesis de zeolitas, reactivo genérico de laboratorio, calibración de equipo, etc." value={form.notas} onChange={e=>sf("notas",e.target.value)}/>
         </div>
         <div className="form-group">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
             <label className="form-label" style={{marginBottom:0}}>Detalles del pedido <span className="req">*</span></label>
-            <button className="btn-add" onClick={()=>setProds(ps=>[...ps,{codigo:"",nombre:"",unidades:1,precio:0,url:""}])}>+ Añadir producto</button>
+            <div style={{display:"flex",gap:6}}>
+              {catalogo.length>0&&<button type="button" className="btn-add" style={{background:"#fff8ed",color:"#ea580c",border:"1.5px solid #fed7aa"}} onClick={()=>setShowCatalog(true)}>📦 Desde catálogo</button>}
+              <button className="btn-add" onClick={()=>setProds(ps=>[...ps,{codigo:"",nombre:"",unidades:1,precio:0,url:""}])}>+ Añadir producto</button>
+            </div>
           </div>
           <div className="products-header">
             <span>Código</span><span>Nombre del producto</span><span>URL <span style={{fontWeight:500,fontSize:".65rem"}}>(opcional)</span></span><span>Uds.</span><span>€/ud</span><span></span>
@@ -480,7 +513,21 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[]}){
           {prods.map((p,i)=>(
             <div className="product-row" key={i}>
               <input className="form-input" placeholder="REF-001" value={p.codigo} onChange={e=>sp(i,"codigo",e.target.value)}/>
-              <input className="form-input" placeholder="Nombre del producto" value={p.nombre} onChange={e=>sp(i,"nombre",e.target.value)}/>
+              <div style={{position:"relative"}}>
+                <input className="form-input" placeholder="Nombre del producto" value={p.nombre}
+                  onChange={e=>{ sp(i,"nombre",e.target.value); const v=e.target.value.toLowerCase(); setSuggest(v.length>1?catalogo.filter(c=>c.nombre.toLowerCase().includes(v)).slice(0,5):[]); }}
+                  onBlur={()=>setTimeout(()=>setSuggest([]),200)}/>
+                {suggest.length>0&&(
+                  <div className="suggest-box">
+                    {suggest.map(s=>(
+                      <div key={s.id} className="suggest-item" onMouseDown={()=>{ sp(i,"nombre",s.nombre); sp(i,"codigo",s.codigo||""); sp(i,"precio",s.precio||0); sp(i,"url",s.url||""); setSuggest([]); }}>
+                        <span>📦</span>
+                        <div><div style={{fontWeight:800}}>{s.nombre}</div><div style={{fontSize:".68rem",color:"var(--muted)"}}>{s.proveedor&&"🏪 "+s.proveedor} {s.precio>0&&"· "+eur(s.precio)}</div></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <input className="form-input" placeholder="https://…" value={p.url||""} onChange={e=>sp(i,"url",e.target.value)}/>
               <input className="form-input" type="number" min="1" value={p.unidades} onChange={e=>sp(i,"unidades",e.target.value)}/>
               <input className="form-input" type="number" min="0" step="0.01" value={p.precio} onChange={e=>sp(i,"precio",e.target.value)}/>
@@ -495,6 +542,7 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[]}){
         </div>
       </div>
     </div>
+    {showCatalog&&<CatalogModal catalogo={catalogo} onClose={()=>setShowCatalog(false)} onAdd={addFromCatalog}/>}
   );
 }
 
@@ -953,6 +1001,170 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,proveedores=[]}){
   );
 }
 
+/* ── CATALOG MODAL ── */
+function CatalogModal({catalogo,onClose,onAdd}){
+  const [search,setSearch]=useState("");
+  const [selected,setSelected]=useState({});
+  const filtered=catalogo.filter(p=>{ const s=search.toLowerCase(); return !s||p.nombre.toLowerCase().includes(s)||(p.codigo||"").toLowerCase().includes(s)||(p.proveedor||"").toLowerCase().includes(s); });
+  const toggle=p=>setSelected(prev=>prev[p.id]?{...prev,[p.id]:undefined}:{...prev,[p.id]:{...p,unidades:1}});
+  const setUds=(id,v)=>setSelected(prev=>({...prev,[id]:{...prev[id],unidades:v}}));
+  const selList=Object.values(selected).filter(Boolean);
+  const confirmAdd=()=>{ if(selList.length===0) return; onAdd(selList.map(p=>({codigo:p.codigo||"",nombre:p.nombre||"",url:p.url||"",unidades:Number(p.unidades)||1,precio:Number(p.precio)||0}))); onClose(); };
+  return(
+    <div className="catalog-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="catalog-modal">
+        <div className="catalog-head">
+          <h3>📦 Catálogo de productos frecuentes</h3>
+          <div className="catalog-search">
+            <span className="catalog-search-icon">🔍</span>
+            <input placeholder="Buscar por nombre, código, proveedor…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
+          </div>
+        </div>
+        <div className="catalog-body">
+          {catalogo.length===0
+            ?<div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600}}>No hay productos en el catálogo todavía.</div>
+            :filtered.length===0
+            ?<div style={{textAlign:"center",padding:"1.5rem",color:"var(--muted)",fontWeight:600}}>Sin resultados para "{search}"</div>
+            :filtered.map(p=>(
+              <div key={p.id} className={`catalog-item${selected[p.id]?" selected":""}`} onClick={()=>toggle(p)}>
+                <div className="catalog-item-info">
+                  <div className="catalog-item-name">{p.nombre}</div>
+                  <div className="catalog-item-meta">
+                    {p.codigo&&<span>📋 {p.codigo}</span>}
+                    {p.proveedor&&<span>🏪 {p.proveedor}</span>}
+                    {p.categoria&&<CatTag cat={p.categoria}/>}
+                    {p.precio>0&&<span style={{color:"var(--accent)",fontWeight:800}}>{eur(p.precio)}</span>}
+                    {p.url&&<a href={p.url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{color:"var(--accent)"}}>🔗 Ver</a>}
+                  </div>
+                </div>
+                {selected[p.id]&&(
+                  <div onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:6}}>
+                    <label style={{fontSize:".72rem",fontWeight:700,color:"var(--muted)"}}>Uds.</label>
+                    <input type="number" min="1" value={selected[p.id].unidades} onChange={e=>setUds(p.id,e.target.value)} style={{width:52,padding:"4px 6px",border:"1.5px solid var(--accent)",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".82rem",fontWeight:700,textAlign:"center"}}/>
+                  </div>
+                )}
+                <div className="catalog-item-check">{selected[p.id]?"✓":""}</div>
+              </div>
+            ))
+          }
+        </div>
+        <div className="catalog-foot">
+          <div className="catalog-selected-count">{selList.length>0?selList.length+" producto"+(selList.length>1?"s":"")+" seleccionado"+(selList.length>1?"s":""):""}</div>
+          <div style={{display:"flex",gap:8}}>
+            <button className="btn-sec" onClick={onClose}>Cancelar</button>
+            <button className="btn-primary" onClick={confirmAdd} style={{opacity:selList.length===0?.5:1}}>Añadir {selList.length>0?"("+selList.length+")":""}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── CATALOG ADMIN ── */
+function CatalogAdmin({catalogo,setCatalogo}){
+  const emptyForm={nombre:"",codigo:"",proveedor:"",categoria:"",url:"",precio:""};
+  const [showModal,setShowModal]=useState(false);
+  const [editing,setEditing]=useState(null);
+  const [form,setForm]=useState(emptyForm);
+  const [err,setErr]=useState("");
+  const [fetching,setFetching]=useState(false);
+  const [search,setSearch]=useState("");
+  const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const openNew=()=>{ setForm(emptyForm); setEditing(null); setErr(""); setShowModal(true); };
+  const openEdit=p=>{ setForm({nombre:p.nombre||"",codigo:p.codigo||"",proveedor:p.proveedor||"",categoria:p.categoria||"",url:p.url||"",precio:p.precio||""}); setEditing(p.id); setErr(""); setShowModal(true); };
+  const fetchPrice=async()=>{
+    if(!form.url.trim()) return setErr("Añade primero la URL del producto.");
+    setFetching(true); setErr("");
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,system:"Extrae datos de productos cientificos. Responde SOLO JSON sin markdown: {"precio":numero_o_null,"nombre":"string","codigo":"string"}",messages:[{role:"user",content:"Extrae precio unitario, nombre y codigo de referencia de este producto: "+form.url}]})});
+      const data=await res.json();
+      const text=data.content?.[0]?.text||"";
+      const parsed=JSON.parse(text.replace(/```json|```/g,"").trim());
+      if(parsed.precio) sf("precio",String(parsed.precio));
+      if(parsed.nombre&&!form.nombre) sf("nombre",parsed.nombre);
+      if(parsed.codigo&&!form.codigo) sf("codigo",parsed.codigo);
+      if(!parsed.precio) setErr("No se pudo extraer el precio. Introdúcelo manualmente.");
+    }catch(e){ setErr("Error al obtener precio. Introdúcelo manualmente."); }
+    setFetching(false);
+  };
+  const save=async()=>{
+    if(!form.nombre.trim()) return setErr("El nombre es obligatorio.");
+    const fb=getFB();
+    if(editing===null){
+      const newP={...form,nombre:form.nombre.trim(),precio:Number(form.precio)||0,id:Date.now()};
+      if(fb){ await fb.addDoc(fb.collection(fb.db,"catalogo"),newP); } else { setCatalogo(ps=>[...ps,newP]); }
+    } else {
+      const p=catalogo.find(x=>x.id===editing);
+      const upd={...p,...form,nombre:form.nombre.trim(),precio:Number(form.precio)||0};
+      if(fb&&p?._docId){ await fb.updateDoc(fb.doc(fb.db,"catalogo",p._docId),upd); } else { setCatalogo(ps=>ps.map(x=>x.id===editing?upd:x)); }
+    }
+    setShowModal(false);
+  };
+  const del=async p=>{ if(!confirm("Eliminar "+p.nombre+"?")) return; const fb=getFB(); if(fb&&p._docId){ await fb.deleteDoc(fb.doc(fb.db,"catalogo",p._docId)); } else { setCatalogo(ps=>ps.filter(x=>x.id!==p.id)); } };
+  const filtered=catalogo.filter(p=>!search||p.nombre.toLowerCase().includes(search.toLowerCase())||(p.proveedor||"").toLowerCase().includes(search.toLowerCase()));
+  return(
+    <div>
+      <div className="pm-header">
+        <div>
+          <div className="pm-title">📦 Catálogo de productos frecuentes</div>
+          <div className="pm-subtitle">Aparecen como sugerencias al escribir en el formulario, o se añaden directamente desde el catálogo</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span style={{background:"#fff8ed",color:"#ea580c",padding:"4px 12px",borderRadius:20,fontSize:".8rem",fontWeight:700}}>{catalogo.length} productos</span>
+          <button className="btn-primary" onClick={openNew} style={{fontSize:".82rem",padding:"8px 16px"}}>+ Añadir producto</button>
+        </div>
+      </div>
+      {catalogo.length>0&&<div style={{position:"relative",marginBottom:"1rem"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}>🔍</span><input className="form-input" style={{paddingLeft:34}} placeholder="Buscar en catálogo…" value={search} onChange={e=>setSearch(e.target.value)}/></div>}
+      {catalogo.length===0
+        ?<div className="pm-empty">📦 No hay productos todavía. Añade el primero.</div>
+        :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:12}}>
+          {filtered.map(p=>(
+            <div key={p.id} className="pdb-card">
+              <div className="pdb-card-head">
+                <div className="pdb-card-name" style={{fontSize:".9rem"}}>{p.nombre}</div>
+                {p.precio>0&&<span style={{fontWeight:900,color:"var(--accent)",fontSize:".9rem"}}>{eur(p.precio)}</span>}
+              </div>
+              <div className="pdb-card-body">
+                {p.codigo&&<div className="pdb-field"><span className="pdb-field-lbl">Código</span><span className="pdb-field-val">{p.codigo}</span></div>}
+                {p.proveedor&&<div className="pdb-field"><span className="pdb-field-lbl">Proveedor</span><span className="pdb-field-val">{p.proveedor}</span></div>}
+                {p.categoria&&<div className="pdb-field"><span className="pdb-field-lbl">Cat.</span><span className="pdb-field-val"><CatTag cat={p.categoria}/></span></div>}
+                {p.url&&<div className="pdb-field"><span className="pdb-field-lbl">URL</span><span className="pdb-field-val"><a href={p.url} target="_blank" rel="noreferrer">🔗 Ver</a></span></div>}
+              </div>
+              <div className="pdb-card-actions"><button className="pdb-btn-edit" onClick={()=>openEdit(p)}>✏️ Editar</button><button className="pdb-btn-del" onClick={()=>del(p)}>🗑️</button></div>
+            </div>
+          ))}
+        </div>
+      }
+      {showModal&&(
+        <div className="pdb-modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
+          <div className="pdb-modal">
+            <h3>{editing===null?"➕ Nuevo producto":"✏️ Editar producto"}</h3>
+            {err&&<div className="err-msg" style={{margin:"8px 0"}}>⚠️ {err}</div>}
+            <div className="pdb-form-grid" style={{marginTop:12}}>
+              <div className="form-group full" style={{marginBottom:0}}><label className="form-label">Nombre <span className="req">*</span></label><input className="form-input" placeholder="Ej: Etanol absoluto 99.8%" value={form.nombre} onChange={e=>sf("nombre",e.target.value)}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Código</label><input className="form-input" placeholder="REF-001" value={form.codigo} onChange={e=>sf("codigo",e.target.value)}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Proveedor habitual</label><input className="form-input" placeholder="Sigma-Aldrich, VWR…" value={form.proveedor} onChange={e=>sf("proveedor",e.target.value)}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Categoría</label><select className="form-input" value={form.categoria} onChange={e=>sf("categoria",e.target.value)}><option value="">— Sin categoría —</option>{CATS.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}</select></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Precio habitual (€)</label><input className="form-input" type="number" min="0" step="0.01" placeholder="0.00" value={form.precio} onChange={e=>sf("precio",e.target.value)}/></div>
+              <div className="form-group full" style={{marginBottom:0}}>
+                <label className="form-label">URL <span className="opt">(pega la URL y pulsa "🤖 Auto-precio" para obtener el precio con IA)</span></label>
+                <div style={{display:"flex",gap:6}}>
+                  <input className="form-input" placeholder="https://www.sigmaaldrich.com/…" value={form.url} onChange={e=>sf("url",e.target.value)} style={{flex:1}}/>
+                  <button className={"fetch-btn"+(fetching?" loading":"")} onClick={fetchPrice} disabled={fetching}>{fetching?"⏳ Buscando…":"🤖 Auto-precio"}</button>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{marginTop:"1.25rem"}}>
+              <button className="btn-sec" onClick={()=>setShowModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={save}>💾 Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── PROJECT MANAGER PANEL ── */
 function ProjectManager({proyectos,setProyectos}){
   const getFBl=getFB;
@@ -1335,6 +1547,7 @@ function App(){
   const [orders,setOrders]       = useState(initialOrders);
   const [proyectos,setProyectos]   = useState([]);
   const [proveedores,setProveedores] = useState([]);
+  const [catalogo,setCatalogo]       = useState([]);
   const [filter,setFilter]       = useState("todos");
   const [search,setSearch]       = useState("");
   const [showNew,setShowNew]     = useState(false);
@@ -1357,6 +1570,9 @@ function App(){
       });
       fb.onSnapshot(fb.collection(fb.db,"proveedores"),snap=>{
         setProveedores(snap.docs.map(d=>({...d.data(),_docId:d.id})));
+      });
+      fb.onSnapshot(fb.collection(fb.db,"catalogo"),snap=>{
+        setCatalogo(snap.docs.map(d=>({...d.data(),_docId:d.id})));
       });
     },300);
     return ()=>clearInterval(iv);
@@ -1449,11 +1665,14 @@ function App(){
             <button className={`tab-btn${tab==="resumen"?" act":""}`} onClick={()=>setTab("resumen")}>📊 Resumen</button>
             <button className={`tab-btn${tab==="proyectos"?" act":""}`} onClick={()=>setTab("proyectos")}>📁 Proyectos</button>
             <button className={`tab-btn${tab==="proveedores"?" act":""}`} onClick={()=>setTab("proveedores")}>🏪 Proveedores</button>
+            <button className={`tab-btn${tab==="catalogo"?" act":""}`} onClick={()=>setTab("catalogo")}>📦 Catálogo</button>
           </div>
         )}
 
         {/* CONTENT */}
-        {tab==="proveedores"&&isAdmin
+        {tab==="catalogo"&&isAdmin
+          ? <CatalogAdmin catalogo={catalogo} setCatalogo={setCatalogo}/>
+          : tab==="proveedores"&&isAdmin
           ? <ProviderDB proveedores={proveedores} setProveedores={setProveedores}/>
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
@@ -1507,7 +1726,7 @@ function App(){
         )}
         </>}
       </main>
-      {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos} proveedores={proveedores}/>}
+      {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos} proveedores={proveedores} catalogo={catalogo}/>}
       {showLogin &&<LoginModal onClose={()=>setShowLogin(false)} onSuccess={()=>{setIsAdmin(true);setShowLogin(false);}}/>}
       {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder} proyectos={proyectos} onAsignarProyecto={asignarProyecto}/>}
     </>
