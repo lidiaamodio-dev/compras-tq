@@ -806,7 +806,7 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,proveedores=[]}){
+function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,proveedores=[]}){
   const [dashTab,setDashTab]=useState("gasto");
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
@@ -859,7 +859,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnir
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} proveedores={proveedores}/>
+        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} proveedores={proveedores}/>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -1159,9 +1159,10 @@ function MergeBlocksModal({proveedorName, bloques, onClose, onMerge}){
 }
 
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,proveedores=[]}){
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,proveedores=[]}){
   const [splitProv, setSplitProv] = useState(null);
-  const [mergeProv, setMergeProv] = useState(null); // proveedorName to show merge modal
+  const [mergeProv, setMergeProv] = useState(null);
+  const [confirmRecibido, setConfirmRecibido] = useState(null); // pv.key
   // group by bloque (if set) or proveedor
   const provMap={};
   valid.forEach(o=>{
@@ -1245,6 +1246,29 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
                       onClick={()=>setSplitProv({name:pv.name, bloque:pv.bloqueLabel, orders:pv.orders})}
                       style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(249,115,22,.35)",whiteSpace:"nowrap"}}
                     >✂️ Dividir</button>
+                  )}
+                  {/* Marcar realizado — con confirmación inline */}
+                  {pv.orders.some(o=>o.status!=="realizado"&&o.status!=="recibido") ? (
+                    confirmRecibido===pv.key
+                      ? <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:9,padding:"5px 10px"}}>
+                          <span style={{fontSize:".72rem",fontWeight:700,color:"#c2410c"}}>¿Marcar todo como realizado?</span>
+                          <button onClick={()=>{ onCambiarStatusBloque(pv.orders,"realizado"); setConfirmRecibido(null); }}
+                            style={{background:"#c2410c",color:"white",border:"none",borderRadius:7,padding:"4px 10px",fontSize:".72rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>📦 Sí</button>
+                          <button onClick={()=>setConfirmRecibido(null)}
+                            style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"4px 8px",fontSize:".72rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>No</button>
+                        </div>
+                      : <button onClick={()=>setConfirmRecibido(pv.key)}
+                          style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(194,65,12,.35)",whiteSpace:"nowrap"}}>
+                          📦 Pedido realizado
+                        </button>
+                  ) : pv.orders.every(o=>o.status==="recibido") ? (
+                    <span style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>
+                      ✅ Recibido
+                    </span>
+                  ) : (
+                    <span style={{background:"#fff7ed",color:"#c2410c",border:"1.5px solid #fed7aa",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>
+                      📦 Realizado
+                    </span>
                   )}
                   <button
                     onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===pv.name.toLowerCase()); generatePedidoExcel(pv.name, pv.orders, dbProv||null); }}
@@ -1916,6 +1940,13 @@ function App(){
     else { setOrders(p=>p.map(o=>o.id===id?{...o,status:st}:o)); }
     setSelected(p=>p&&p.id===id?{...p,status:st}:p);
   };
+  const cambiarStatusBloque=async(bloqueOrders, st)=>{
+    const fb=getFB();
+    for(const o of bloqueOrders){
+      if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{status:st}); }
+      else { setOrders(p=>p.map(x=>x.id===o.id?{...x,status:st}:x)); }
+    }
+  };
   const deleteOrder=async(id)=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
@@ -2091,7 +2122,7 @@ function App(){
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} proveedores={proveedores}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} proveedores={proveedores}/>
           : (
           <>
             <div className="filters-section">
