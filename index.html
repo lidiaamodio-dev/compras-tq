@@ -541,8 +541,8 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=
           <button className="btn-primary" onClick={submit}>💾 Enviar Solicitud</button>
         </div>
       </div>
+      {showCatalog&&<CatalogModal catalogo={catalogo} onClose={()=>setShowCatalog(false)} onAdd={addFromCatalog}/>}
     </div>
-    {showCatalog&&<CatalogModal catalogo={catalogo} onClose={()=>setShowCatalog(false)} onAdd={addFromCatalog}/>}
   );
 }
 
