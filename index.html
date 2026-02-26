@@ -526,18 +526,7 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
                   onClick={()=>onStatusChange(order.id,s)}>{STATUS_LABELS[s]}</button>
               ))}
             </div>
-            {/* Project assignment */}
-            <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid #ddd6fe"}}>
-              <div style={{fontSize:".72rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"var(--accent)",marginBottom:8}}>📁 Asignar proyecto</div>
-              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                <select className="form-input" style={{maxWidth:260,flex:1}} value={order.proyecto||""} onChange={e=>onAsignarProyecto(order.id,e.target.value)}>
-                  <option value="">— Sin proyecto —</option>
-                  {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}{p.desc?" · "+p.desc:""}</option>)}
-                </select>
-                {order.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"4px 12px",borderRadius:20,fontSize:".78rem",fontWeight:800}}>📁 {order.proyecto}</span>}
-              </div>
-              {order.proyecto&&<div style={{marginTop:6,fontSize:".72rem",color:"#15803d",fontWeight:700}}>✅ Al asignar proyecto el estado cambia automáticamente a "En proceso"</div>}
-            </div>
+
           </div>
         )}
         <div className="detail-section">
@@ -702,7 +691,7 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders}){
+function Dashboard({orders,proyectos=[],onAsignarProyecto}){
   const [dashTab,setDashTab]=useState("gasto");
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
@@ -755,7 +744,7 @@ function Dashboard({orders}){
       </div>
 
       {dashTab==="proveedor" ? (
-        <ProveedorView valid={valid}/>
+        <ProveedorView valid={valid} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto}/>
       ) : dashTab==="gasto" ? (
         <div>
           {/* Category breakdown */}
@@ -827,7 +816,7 @@ function Dashboard({orders}){
 }
 
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid}){
+function ProveedorView({valid,proyectos=[],onAsignarProyecto}){
   // group by proveedor
   const provMap={};
   valid.forEach(o=>{
@@ -847,7 +836,7 @@ function ProveedorView({valid}){
     <div>
       {proveedores.map(pv=>(
         <div key={pv.name} className="dash-section" style={{marginBottom:"1rem"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1rem",flexWrap:"wrap",gap:12}}>
             <div>
               <div style={{fontWeight:900,fontSize:"1.05rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:8}}>
                 🏪 {pv.name}
@@ -856,7 +845,26 @@ function ProveedorView({valid}){
                 {pv.orders.length} solicitud{pv.orders.length!==1?"es":""} · {[...new Set(pv.orders.map(o=>o.responsable))].length} solicitante{[...new Set(pv.orders.map(o=>o.responsable))].length!==1?"s":""}
               </div>
             </div>
-            <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+              {/* Project selector for whole proveedor group */}
+              <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
+                <div style={{fontSize:".68rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"var(--accent)"}}>📁 Asignar proyecto al pedido</div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <select
+                    className="form-input"
+                    style={{minWidth:200,fontSize:".85rem",padding:"7px 30px 7px 11px"}}
+                    value={pv.orders[0]?.proyecto||""}
+                    onChange={e=>{ pv.orders.forEach(o=>onAsignarProyecto(o.id,e.target.value)); }}
+                  >
+                    <option value="">— Sin proyecto —</option>
+                    {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}{p.desc?" · "+p.desc:""}</option>)}
+                  </select>
+                  {pv.orders[0]?.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"4px 12px",borderRadius:20,fontSize:".75rem",fontWeight:800,whiteSpace:"nowrap"}}>📁 {pv.orders[0].proyecto}</span>}
+                </div>
+                {pv.orders[0]?.proyecto&&<div style={{fontSize:".68rem",color:"#15803d",fontWeight:700}}>✅ Pedidos en proceso</div>}
+              </div>
+              <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px",minWidth:80,textAlign:"right"}}>{eur(pv.total)}</div>
+            </div>
           </div>
           <table className="ptable">
             <thead>
@@ -926,7 +934,7 @@ function ProjectManager({proyectos,setProyectos}){
       <div className="pm-header">
         <div>
           <div className="pm-title">📁 Gestión de Proyectos</div>
-          <div className="pm-subtitle">Los proyectos activos aparecen como menú desplegable al crear una solicitud</div>
+          <div className="pm-subtitle">Los proyectos activos aparecen en el resumen por proveedor para asignarlos al pedido</div>
         </div>
         <div style={{display:"flex",gap:8,fontSize:".8rem",color:"var(--muted)",fontWeight:700}}>
           <span style={{background:"#dcfce7",color:"#15803d",padding:"4px 12px",borderRadius:20}}>{active.length} activos</span>
@@ -1120,7 +1128,7 @@ function App(){
         {tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto}/>
           : (
           <>
             <div className="filters-section">
