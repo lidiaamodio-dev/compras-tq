@@ -632,10 +632,30 @@ function LoginModal({onClose,onSuccess}){
 
 /* ── ORDER DETAIL ── */
 const LOCKED_STATUSES = ["realizado","recibido","rechazado"];
-function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto}){
+const PRE_PROCESO_STATUSES = ["pendiente","revision","aprobado"];
+function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto,proveedores=[]}){
   const [confirmDel,setConfirmDel]=useState(false);
+  const [confirmRetro,setConfirmRetro]=useState(null); // target status to revert to
+  const [editNotas,setEditNotas]=useState(false);
+  const [notasDraft,setNotasDraft]=useState(order.notas||"");
+  const [editResp,setEditResp]=useState(false);
+  const [respDraft,setRespDraft]=useState(order.responsable||"");
   const total=tot(order.products);
   const locked = !isAdmin && LOCKED_STATUSES.includes(order.status);
+  const isEnProceso = order.status==="proceso";
+
+  const handleStatusClick=(s)=>{
+    // If clicking a pre-proceso status AND order has a project → ask for confirmation
+    if(PRE_PROCESO_STATUSES.includes(s) && order.proyecto){
+      setConfirmRetro(s);
+    } else {
+      onStatusChange(order.id,s);
+    }
+  };
+
+  const saveNotas=()=>{ onStatusChange(order.id, order.status, {notas: notasDraft}); setEditNotas(false); };
+  const saveResp=()=>{ onStatusChange(order.id, order.status, {responsable: respDraft}); setEditResp(false); };
+
   return(
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div className="modal">
@@ -658,6 +678,29 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             </div>
           )}
         </div>
+
+        {/* Confirm retroceder banner */}
+        {confirmRetro&&(
+          <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:12,padding:"12px 16px",marginBottom:"1rem",display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{fontWeight:800,fontSize:".88rem",color:"#dc2626",display:"flex",alignItems:"center",gap:8}}>
+              ⚠️ ¿Retroceder a "{STATUS_LABELS[confirmRetro]}"?
+            </div>
+            <div style={{fontSize:".78rem",color:"#7f1d1d",fontWeight:600}}>
+              Este pedido tiene el proyecto <b>📁 {order.proyecto}</b> asignado. Al retroceder, la asignación de proyecto se eliminará y deberá volver a asignarse.
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{ onStatusChange(order.id,confirmRetro); setConfirmRetro(null); }}
+                style={{background:"#dc2626",color:"white",border:"none",borderRadius:8,padding:"7px 16px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                Sí, retroceder y quitar proyecto
+              </button>
+              <button onClick={()=>setConfirmRetro(null)}
+                style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         {isAdmin&&(
           <div className="admin-zone">
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -675,11 +718,74 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
               {Object.keys(STATUS_LABELS).map(s=>(
                 <button key={s} className="btn-st"
                   style={order.status===s?{background:STATUS_COLORS[s]?.bg,color:STATUS_COLORS[s]?.color,borderColor:STATUS_COLORS[s]?.color,boxShadow:"0 2px 6px rgba(0,0,0,.1)"}:{}}
-                  onClick={()=>onStatusChange(order.id,s)}>{STATUS_LABELS[s]}</button>
+                  onClick={()=>handleStatusClick(s)}>{STATUS_LABELS[s]}</button>
               ))}
             </div>
           </div>
         )}
+
+        {/* Admin edit zone — visible when order is "En proceso" */}
+        {isAdmin&&isEnProceso&&(
+          <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"14px 16px",marginBottom:"1.4rem"}}>
+            <div style={{fontSize:".72rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".06em",color:"#15803d",marginBottom:10}}>🔄 Gestión del pedido en proceso</div>
+
+            {/* Responsable */}
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>👤 Responsable del pedido</div>
+              {editResp
+                ? <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <input value={respDraft} onChange={e=>setRespDraft(e.target.value)}
+                      placeholder="Nombre y apellidos…"
+                      style={{flex:1,padding:"7px 10px",border:"1.5px solid #86efac",borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:700,outline:"none"}}
+                      autoFocus onKeyDown={e=>e.key==="Enter"&&saveResp()}/>
+                    <button onClick={saveResp} style={{background:"#15803d",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
+                    <button onClick={()=>{setEditResp(false);setRespDraft(order.responsable||"");}} style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                  </div>
+                : <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <span style={{flex:1,fontWeight:700,fontSize:".88rem",color:order.responsable?"var(--navy)":"var(--muted)",fontStyle:order.responsable?"normal":"italic"}}>
+                      {order.responsable||"Sin responsable asignado"}
+                    </span>
+                    <button onClick={()=>{setEditResp(true);setRespDraft(order.responsable||"");}}
+                      style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✏️ Editar</button>
+                  </div>
+              }
+            </div>
+
+            {/* Notas */}
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📝 Notas / Observaciones</div>
+              {editNotas
+                ? <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <textarea value={notasDraft} onChange={e=>setNotasDraft(e.target.value)}
+                      style={{width:"100%",padding:"8px 10px",border:"1.5px solid #86efac",borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:600,outline:"none",resize:"vertical",minHeight:70}}
+                      autoFocus/>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={saveNotas} style={{background:"#15803d",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
+                      <button onClick={()=>{setEditNotas(false);setNotasDraft(order.notas||"");}} style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                    </div>
+                  </div>
+                : <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                    <span style={{flex:1,fontWeight:600,fontSize:".85rem",color:order.notas?"var(--navy)":"var(--muted)",fontStyle:order.notas?"normal":"italic",whiteSpace:"pre-wrap"}}>
+                      {order.notas||"Sin notas"}
+                    </span>
+                    <button onClick={()=>{setEditNotas(true);setNotasDraft(order.notas||"");}}
+                      style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>✏️ Editar</button>
+                  </div>
+              }
+            </div>
+
+            {/* Excel download */}
+            <div>
+              <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📥 Descargar pedido</div>
+              <button
+                onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===order.proveedor.toLowerCase()); generatePedidoExcel(order.proveedor,[order],dbProv||null); }}
+                style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:"0 2px 8px rgba(34,197,94,.35)"}}>
+                📥 Descargar Excel del pedido
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="detail-section">
           <h3>Información</h3>
           <div className="detail-grid">
@@ -690,7 +796,7 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             {!locked&&order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
           </div>
         </div>
-        {order.notas&&(
+        {order.notas&&!isEnProceso&&(
           <div className="detail-section">
             <h3>Notas</h3>
             <div className="notes-box">"{order.notas}"</div>
@@ -2150,12 +2256,12 @@ function App(){
     setShowNew(false);
   };
   const PRE_PROCESO = ["pendiente","revision","aprobado"];
-  const changeStatus=async(id,st)=>{
+  const changeStatus=async(id,st,extraFields={})=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
     // If going back to a pre-proceso status, clear the assigned project
     const clearProyecto = PRE_PROCESO.includes(st) && o?.proyecto;
-    const update = clearProyecto ? {status:st, proyecto:""} : {status:st};
+    const update = {...extraFields, status:st, ...(clearProyecto?{proyecto:""}:{})};
     if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), update); }
     else { setOrders(p=>p.map(x=>x.id===id?{...x,...update}:x)); }
     setSelected(p=>p&&p.id===id?{...p,...update}:p);
@@ -2450,7 +2556,7 @@ function App(){
       </main>
       {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos} proveedores={proveedores} catalogo={catalogo}/>}
       {showLogin &&<LoginModal onClose={()=>setShowLogin(false)} onSuccess={()=>{setIsAdmin(true);setShowLogin(false);}}/>}
-      {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder} proyectos={proyectos} onAsignarProyecto={asignarProyecto}/>}
+      {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder} proyectos={proyectos} onAsignarProyecto={asignarProyecto} proveedores={proveedores}/>}
     </>
   );
 }
