@@ -654,7 +654,13 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
   };
 
   const saveNotas=()=>{ onStatusChange(order.id, order.status, {notas: notasDraft}); setEditNotas(false); };
-  const saveResp=()=>{ onStatusChange(order.id, order.status, {responsable: respDraft}); setEditResp(false); };
+  const [respErr,setRespErr]=useState("");
+  const saveResp=()=>{
+    if(!respDraft.trim()){ setRespErr("El responsable es obligatorio."); return; }
+    setRespErr("");
+    onStatusChange(order.id, order.status, {responsable: respDraft});
+    setEditResp(false);
+  };
 
   return(
     <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
@@ -668,10 +674,10 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             </div>
             <div style={{fontSize:".78rem",color:"var(--muted)",fontWeight:600,display:"flex",gap:12,flexWrap:"wrap"}}>
               <span>📅 {fmt(order.date)}</span>
-              {!locked&&order.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"1px 8px",borderRadius:20,fontWeight:700}}>📁 {order.proyecto}</span>}
+              {isAdmin&&order.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"1px 8px",borderRadius:20,fontWeight:700}}>📁 {order.proyecto}</span>}
             </div>
           </div>
-          {!locked&&(
+          {isAdmin&&(
             <div style={{textAlign:"right"}}>
               <div style={{fontWeight:900,fontSize:"1.5rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(total)}</div>
               <div style={{fontSize:".7rem",color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:".04em"}}>Total</div>
@@ -733,20 +739,23 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             <div style={{marginBottom:10}}>
               <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>👤 Responsable del pedido</div>
               {editResp
-                ? <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <input value={respDraft} onChange={e=>setRespDraft(e.target.value)}
-                      placeholder="Nombre y apellidos…"
-                      style={{flex:1,padding:"7px 10px",border:"1.5px solid #86efac",borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:700,outline:"none"}}
-                      autoFocus onKeyDown={e=>e.key==="Enter"&&saveResp()}/>
-                    <button onClick={saveResp} style={{background:"#15803d",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
-                    <button onClick={()=>{setEditResp(false);setRespDraft(order.responsable||"");}} style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input value={respDraft} onChange={e=>{setRespDraft(e.target.value);setRespErr("");}}
+                        placeholder="Nombre y apellidos… (obligatorio)"
+                        style={{flex:1,padding:"7px 10px",border:"1.5px solid "+(respErr?"#fca5a5":"#86efac"),borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:700,outline:"none"}}
+                        autoFocus onKeyDown={e=>e.key==="Enter"&&saveResp()}/>
+                      <button onClick={saveResp} style={{background:"#15803d",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
+                      <button onClick={()=>{setEditResp(false);setRespDraft(order.responsable||"");setRespErr("");}} style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                    </div>
+                    {respErr&&<div style={{fontSize:".74rem",color:"#dc2626",fontWeight:700}}>⚠️ {respErr}</div>}
                   </div>
-                : <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <span style={{flex:1,fontWeight:700,fontSize:".88rem",color:order.responsable?"var(--navy)":"var(--muted)",fontStyle:order.responsable?"normal":"italic"}}>
-                      {order.responsable||"Sin responsable asignado"}
+                : <div style={{display:"flex",gap:8,alignItems:"center",background:!order.responsable?"#fef2f2":"transparent",border:!order.responsable?"1.5px solid #fecaca":"none",borderRadius:!order.responsable?8:0,padding:!order.responsable?"6px 10px":"0"}}>
+                    <span style={{flex:1,fontWeight:700,fontSize:".88rem",color:order.responsable?"var(--navy)":"#dc2626",fontStyle:order.responsable?"normal":"italic"}}>
+                      {order.responsable||"⚠️ Sin responsable — obligatorio para descargar Excel"}
                     </span>
                     <button onClick={()=>{setEditResp(true);setRespDraft(order.responsable||"");}}
-                      style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✏️ Editar</button>
+                      style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>✏️ {order.responsable?"Editar":"Asignar"}</button>
                   </div>
               }
             </div>
@@ -777,9 +786,15 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             {/* Excel download */}
             <div>
               <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📥 Descargar pedido</div>
+              {!order.responsable&&(
+                <div style={{fontSize:".74rem",color:"#dc2626",fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
+                  ⚠️ Debes asignar un <b>responsable</b> antes de descargar el Excel.
+                </div>
+              )}
               <button
-                onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===order.proveedor.toLowerCase()); generatePedidoExcel(order.proveedor,[order],dbProv||null); }}
-                style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:"0 2px 8px rgba(34,197,94,.35)"}}>
+                onClick={()=>{ if(!order.responsable){return;} const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===order.proveedor.toLowerCase()); generatePedidoExcel(order.proveedor,[order],dbProv||null); }}
+                disabled={!order.responsable}
+                style={{background:order.responsable?"linear-gradient(135deg,#22c55e,#16a34a)":"#e5e7eb",color:order.responsable?"white":"#9ca3af",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:order.responsable?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:order.responsable?"0 2px 8px rgba(34,197,94,.35)":"none"}}>
                 📥 Descargar Excel del pedido
               </button>
             </div>
@@ -790,10 +805,10 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
           <h3>Información</h3>
           <div className="detail-grid">
             <div className="detail-item"><div className="lbl">Solicitante</div><div className="val">{order.solicitante||order.responsable}</div></div>
-            {order.responsable&&<div className="detail-item"><div className="lbl">Responsable pedido</div><div className="val">👤 {order.responsable}</div></div>}
+            {isAdmin&&order.responsable&&<div className="detail-item"><div className="lbl">Responsable pedido</div><div className="val">👤 {order.responsable}</div></div>}
             <div className="detail-item"><div className="lbl">Proveedor</div><div className="val">{order.proveedor}</div></div>
             <div className="detail-item"><div className="lbl">Categoría</div><div className="val"><CatTag cat={order.category}/></div></div>
-            {!locked&&order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
+            {isAdmin&&order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
           </div>
         </div>
         {order.notas&&!isEnProceso&&(
@@ -808,8 +823,8 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             <thead>
               <tr>
                 <th>Código</th><th>Producto</th><th>URL</th><th>Uds.</th>
-                {!locked&&<th>Precio/ud</th>}
-                {!locked&&<th>Subtotal</th>}
+                {isAdmin&&<th>Precio/ud</th>}
+                {isAdmin&&<th>Subtotal</th>}
               </tr>
             </thead>
             <tbody>
@@ -819,11 +834,11 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
                   <td style={{fontWeight:800}}>{p.nombre}</td>
                   <td>{p.url?<a href={p.url} target="_blank" rel="noreferrer" style={{color:"var(--accent)",fontSize:".75rem",fontWeight:700,textDecoration:"none"}}>🔗 Ver</a>:"—"}</td>
                   <td>{p.unidades}</td>
-                  {!locked&&<td>{eur(p.precio)}</td>}
-                  {!locked&&<td style={{fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>}
+                  {isAdmin&&<td>{eur(p.precio)}</td>}
+                  {isAdmin&&<td style={{fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>}
                 </tr>
               ))}
-              {!locked&&(
+              {isAdmin&&(
                 <tr style={{background:"var(--bg)"}}>
                   <td colSpan="5" style={{textAlign:"right",fontWeight:800,color:"var(--muted)",fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em"}}>Total</td>
                   <td style={{fontWeight:900,color:"var(--accent)",fontSize:"1rem",letterSpacing:"-.3px"}}>{eur(total)}</td>
@@ -2525,12 +2540,12 @@ function App(){
                         <span className="order-id">{o.id}</span>
                         <StatusTag status={o.status}/>
                         <CatTag cat={o.category}/>
-                        {!locked&&o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
+                        {isAdmin&&o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
                         <span className="order-date">{fmt(o.date)}</span>
                       </div>
                       <div className="order-info">
                         <span>Solicitante <b>{o.solicitante||o.responsable}</b></span>
-                        {o.responsable&&<span>Responsable <b>{o.responsable}</b></span>}
+                        {isAdmin&&o.responsable&&<span>Responsable <b>{o.responsable}</b></span>}
                         <span>Proveedor <b>{o.proveedor}</b></span>
                         <span>Artículos <b>{o.products.length}</b></span>
                       </div>
@@ -2539,7 +2554,7 @@ function App(){
                         {o.products.length>3&&<span className="chip">+{o.products.length-3} más</span>}
                       </div>
                     </div>
-                    {!locked&&(
+                    {isAdmin&&(
                       <div className="order-right">
                         <div className="order-total-num">{eur(tot(o.products))}</div>
                         <div className="order-total-lbl">total</div>
