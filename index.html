@@ -851,7 +851,7 @@ function ProjectView({valid}){
   );
 }
 
-function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,initialDashTab="gasto",proveedores=[]}){
+function Dashboard({orders,proyectos=[],onAsignarProyecto,onConfirmarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,initialDashTab="gasto",proveedores=[]}){
   const [dashTab,setDashTab]=useState(initialDashTab);
   const year = new Date().getFullYear();
   const curMonth = new Date().getMonth();
@@ -912,10 +912,10 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnir
                 <span style={{fontSize:"1.1rem"}}>📋</span>
                 <div>
                   <div style={{fontWeight:900,fontSize:".9rem",color:"#1d4ed8"}}>Por gestionar — Pendientes de asignación de proyecto</div>
-                  <div style={{fontSize:".73rem",color:"#3b82f6",fontWeight:600,marginTop:1}}>Asigna un proyecto para que pasen a "En proceso". Puedes dividir el pedido entre varios proyectos.</div>
+                  <div style={{fontSize:".73rem",color:"#3b82f6",fontWeight:600,marginTop:1}}>Asigna un proyecto y luego pulsa "Confirmar y pasar a En proceso". Puedes dividir el pedido entre varios proyectos.</div>
                 </div>
               </div>
-              <ProveedorView valid={valid.filter(o=>o.status==="revision"||o.status==="aprobado")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} showRealizadoBtn={false} proveedores={proveedores}/>
+              <ProveedorView valid={valid.filter(o=>o.status==="revision"||o.status==="aprobado")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onConfirmarProyecto={onConfirmarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} showRealizadoBtn={false} proveedores={proveedores}/>
             </div>
           )}
           {/* Section 2: Realizados/Recibidos — gestión final */}
@@ -928,7 +928,7 @@ function Dashboard({orders,proyectos=[],onAsignarProyecto,onDividirPedido,onUnir
                   <div style={{fontSize:".73rem",color:"#16a34a",fontWeight:600,marginTop:1}}>Asignación de proyecto, división de bloques y descarga de Excel.</div>
                 </div>
               </div>
-              <ProveedorView valid={valid.filter(o=>o.status==="realizado"||o.status==="recibido")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
+              <ProveedorView valid={valid.filter(o=>o.status==="realizado"||o.status==="recibido")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onConfirmarProyecto={onConfirmarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
             </div>
           )}
           {valid.filter(o=>["revision","aprobado","realizado","recibido"].includes(o.status)).length===0&&(
@@ -1234,7 +1234,7 @@ function MergeBlocksModal({proveedorName, bloques, onClose, onMerge}){
 }
 
 /* ── PROVEEDOR VIEW ── */
-function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,showRealizadoBtn=true,proveedores=[]}){
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,onConfirmarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,showRealizadoBtn=true,proveedores=[]}){
   const [splitProv, setSplitProv] = useState(null);
   const [mergeProv, setMergeProv] = useState(null);
   const [realizadoProv, setRealizadoProv] = useState(null); // {key, orders} — mini-form
@@ -1320,7 +1320,14 @@ function ProveedorView({valid,proyectos=[],onAsignarProyecto,onDividirPedido,onU
                   })()}
                   {!LOCKED_STATUSES.includes(pv.orders[0]?.status)&&pv.orders[0]?.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"4px 12px",borderRadius:20,fontSize:".75rem",fontWeight:800,whiteSpace:"nowrap"}}>📁 {pv.orders[0].proyecto}</span>}
                 </div>
-                {pv.orders[0]?.proyecto&&<div style={{fontSize:".68rem",color:"#15803d",fontWeight:700}}>✅ Pedidos en proceso</div>}
+                {/* Confirm button: show when project is assigned but status is not yet "proceso" */}
+                {pv.orders[0]?.proyecto && pv.orders.some(o=>!LOCKED_STATUSES.includes(o.status) && o.status!=="proceso") && onConfirmarProyecto && (
+                  <button
+                    onClick={()=>onConfirmarProyecto(pv.orders.map(o=>o.id))}
+                    style={{background:"linear-gradient(135deg,#22c55e,#15803d)",color:"white",border:"none",borderRadius:9,padding:"7px 16px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(21,128,61,.35)",whiteSpace:"nowrap",marginTop:2}}
+                  >✅ Confirmar y pasar a "En proceso"</button>
+                )}
+                {pv.orders[0]?.proyecto && pv.orders.every(o=>o.status==="proceso") && <div style={{fontSize:".68rem",color:"#15803d",fontWeight:700}}>✅ Pedidos en proceso</div>}
               </div>
               <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
                 <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
@@ -2142,17 +2149,23 @@ function App(){
     else { setOrders(p=>[o,...p]); }
     setShowNew(false);
   };
+  const PRE_PROCESO = ["pendiente","revision","aprobado"];
   const changeStatus=async(id,st)=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
-    if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{status:st}); }
-    else { setOrders(p=>p.map(o=>o.id===id?{...o,status:st}:o)); }
-    setSelected(p=>p&&p.id===id?{...p,status:st}:p);
+    // If going back to a pre-proceso status, clear the assigned project
+    const clearProyecto = PRE_PROCESO.includes(st) && o?.proyecto;
+    const update = clearProyecto ? {status:st, proyecto:""} : {status:st};
+    if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), update); }
+    else { setOrders(p=>p.map(x=>x.id===id?{...x,...update}:x)); }
+    setSelected(p=>p&&p.id===id?{...p,...update}:p);
   };
   const cambiarStatusBloque=async(bloqueOrders, st, responsable)=>{
     const fb=getFB();
-    const extra = responsable ? {status:st, responsable} : {status:st};
     for(const o of bloqueOrders){
+      // If going back to a pre-proceso status, clear the assigned project
+      const clearProyecto = PRE_PROCESO.includes(st) && o?.proyecto;
+      const extra = {status:st, ...(responsable?{responsable}:{}), ...(clearProyecto?{proyecto:""}:{})};
       if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), extra); }
       else { setOrders(p=>p.map(x=>x.id===o.id?{...x,...extra}:x)); }
     }
@@ -2167,16 +2180,24 @@ function App(){
   const asignarProyecto=async(id,proyecto)=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
-    // If assigning project: advance to proceso. If removing: go back to revision if was proceso, else keep status
+    // Only update the project field, do NOT change the status automatically
+    // Status will only advance when explicitly confirmed via confirmarProyecto
     let nuevoStatus = o?.status||"pendiente";
-    if(proyecto) {
-      if(["pendiente","revision","aprobado"].includes(nuevoStatus)) nuevoStatus="proceso";
-    } else {
-      if(nuevoStatus==="proceso") nuevoStatus="revision";
-    }
+    if(!proyecto && nuevoStatus==="proceso") nuevoStatus="revision"; // if removing project, revert from proceso
     if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{proyecto,status:nuevoStatus}); }
     else { setOrders(p=>p.map(x=>x.id===id?{...x,proyecto,status:nuevoStatus}:x)); }
     setSelected(p=>p&&p.id===id?{...p,proyecto,status:nuevoStatus}:p);
+  };
+  const confirmarProyecto=async(ids)=>{
+    // Advance orders to "proceso" after confirming project assignment
+    const fb=getFB();
+    for(const id of ids){
+      const o=orders.find(x=>x.id===id);
+      if(!o?.proyecto) continue;
+      const nuevoStatus="proceso";
+      if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{status:nuevoStatus}); }
+      else { setOrders(p=>p.map(x=>x.id===id?{...x,status:nuevoStatus}:x)); }
+    }
   };
 
   const dividirPedido=async({orders:srcOrders, itemsA, itemsB, projA, projB, unassigned, allItems})=>{
@@ -2362,7 +2383,7 @@ function App(){
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
           : tab==="resumen"&&isAdmin
-          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} isAdmin={isAdmin} initialDashTab={initialDashTab} proveedores={proveedores}/>
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onConfirmarProyecto={confirmarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} isAdmin={isAdmin} initialDashTab={initialDashTab} proveedores={proveedores}/>
           : (
           <>
             <div className="filters-section">
