@@ -1076,7 +1076,7 @@ function CatalogAdmin({catalogo,setCatalogo}){
     if(!form.url.trim()) return setErr("Añade primero la URL del producto.");
     setFetching(true); setErr("");
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,system:"Extrae datos de productos cientificos. Responde SOLO JSON sin markdown: {"precio":numero_o_null,"nombre":"string","codigo":"string"}",messages:[{role:"user",content:"Extrae precio unitario, nombre y codigo de referencia de este producto: "+form.url}]})});
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,system:"Extrae datos de productos cientificos. Responde SOLO JSON sin markdown: {\"precio\":numero_o_null,\"nombre\":\"string\",\"codigo\":\"string\"}",messages:[{role:"user",content:"Extrae precio unitario, nombre y codigo de referencia de este producto: "+form.url}]})});
       const data=await res.json();
       const text=data.content?.[0]?.text||"";
       const parsed=JSON.parse(text.replace(/```json|```/g,"").trim());
