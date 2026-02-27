@@ -636,6 +636,8 @@ const PRE_PROCESO_STATUSES = ["pendiente","revision","aprobado"];
 function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto,proveedores=[]}){
   const [confirmDel,setConfirmDel]=useState(false);
   const [confirmRetro,setConfirmRetro]=useState(null); // target status to revert to
+  const [motivoRetro,setMotivoRetro]=useState("");
+  const [motivoErr,setMotivoErr]=useState(false);
   const [editNotas,setEditNotas]=useState(false);
   const [notasDraft,setNotasDraft]=useState(order.notas||"");
   const [editResp,setEditResp]=useState(false);
@@ -645,12 +647,29 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
   const isEnProceso = order.status==="proceso";
 
   const handleStatusClick=(s)=>{
-    // If clicking a pre-proceso status AND order has a project → ask for confirmation
-    if(PRE_PROCESO_STATUSES.includes(s) && order.proyecto){
+    // Any backwards move (pre-proceso, or any status when currently advanced) requires confirmation
+    const STATUS_ORDER_MAP = {pendiente:0,revision:1,aprobado:2,proceso:3,realizado:4,recibido:5,rechazado:6};
+    const isGoingBack = (STATUS_ORDER_MAP[s]??9) < (STATUS_ORDER_MAP[order.status]??9);
+    if(isGoingBack){
       setConfirmRetro(s);
+      setMotivoRetro("");
+      setMotivoErr(false);
     } else {
       onStatusChange(order.id,s);
     }
+  };
+
+  const confirmRevert=()=>{
+    if(!motivoRetro.trim()){ setMotivoErr(true); return; }
+    // Reset to original user-submitted state: clear proyecto, responsable, keep original notas + append motivo
+    const notaOriginal = order.notas||"";
+    const notaConMotivo = notaOriginal
+      ? notaOriginal + "\n\n[Devuelto a \"" + STATUS_LABELS[confirmRetro] + "\" — " + motivoRetro.trim() + "]"
+      : "[Devuelto a \"" + STATUS_LABELS[confirmRetro] + "\" — " + motivoRetro.trim() + "]";
+    onStatusChange(order.id, confirmRetro, {proyecto:"", responsable:"", notas: notaConMotivo});
+    setConfirmRetro(null);
+    setMotivoRetro("");
+    setMotivoErr(false);
   };
 
   const saveNotas=()=>{ onStatusChange(order.id, order.status, {notas: notasDraft}); setEditNotas(false); };
@@ -687,20 +706,33 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
 
         {/* Confirm retroceder banner */}
         {confirmRetro&&(
-          <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:12,padding:"12px 16px",marginBottom:"1rem",display:"flex",flexDirection:"column",gap:8}}>
-            <div style={{fontWeight:800,fontSize:".88rem",color:"#dc2626",display:"flex",alignItems:"center",gap:8}}>
-              ⚠️ ¿Retroceder a "{STATUS_LABELS[confirmRetro]}"?
+          <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:14,padding:"14px 16px",marginBottom:"1rem",display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{fontWeight:900,fontSize:".9rem",color:"#dc2626",display:"flex",alignItems:"center",gap:8}}>
+              ⚠️ ¿Devolver a "{STATUS_LABELS[confirmRetro]}"?
             </div>
-            <div style={{fontSize:".78rem",color:"#7f1d1d",fontWeight:600}}>
-              Este pedido tiene el proyecto <b>📁 {order.proyecto}</b> asignado. Al retroceder, la asignación de proyecto se eliminará y deberá volver a asignarse.
+            <div style={{fontSize:".78rem",color:"#7f1d1d",fontWeight:600,lineHeight:1.5}}>
+              El pedido se restablecerá al estado original: se eliminarán el <b>proyecto asignado</b> y el <b>responsable</b>. Esta acción quedará registrada en las notas.
+            </div>
+            <div>
+              <div style={{fontSize:".72rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"#dc2626",marginBottom:5}}>
+                📝 Motivo del retroceso <span style={{color:"#dc2626"}}>*</span>
+              </div>
+              <textarea
+                autoFocus
+                value={motivoRetro}
+                onChange={e=>{setMotivoRetro(e.target.value);setMotivoErr(false);}}
+                placeholder="Explica por qué se devuelve este pedido…"
+                style={{width:"100%",padding:"8px 10px",border:"1.5px solid "+(motivoErr?"#dc2626":"#fca5a5"),borderRadius:9,fontFamily:"'Nunito',sans-serif",fontSize:".84rem",fontWeight:600,outline:"none",resize:"vertical",minHeight:62,background:"white"}}
+              />
+              {motivoErr&&<div style={{fontSize:".72rem",color:"#dc2626",fontWeight:800,marginTop:3}}>⚠️ El motivo es obligatorio para poder retroceder.</div>}
             </div>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{ onStatusChange(order.id,confirmRetro); setConfirmRetro(null); }}
-                style={{background:"#dc2626",color:"white",border:"none",borderRadius:8,padding:"7px 16px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
-                Sí, retroceder y quitar proyecto
+              <button onClick={confirmRevert}
+                style={{background:"#dc2626",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6}}>
+                ↩️ Confirmar retroceso
               </button>
-              <button onClick={()=>setConfirmRetro(null)}
-                style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+              <button onClick={()=>{setConfirmRetro(null);setMotivoRetro("");setMotivoErr(false);}}
+                style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:9,padding:"8px 14px",fontSize:".82rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
                 Cancelar
               </button>
             </div>
@@ -2270,13 +2302,10 @@ function App(){
     else { setOrders(p=>[o,...p]); }
     setShowNew(false);
   };
-  const PRE_PROCESO = ["pendiente","revision","aprobado"];
   const changeStatus=async(id,st,extraFields={})=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
-    // If going back to a pre-proceso status, clear the assigned project
-    const clearProyecto = PRE_PROCESO.includes(st) && o?.proyecto;
-    const update = {...extraFields, status:st, ...(clearProyecto?{proyecto:""}:{})};
+    const update = {status:st, ...extraFields};
     if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), update); }
     else { setOrders(p=>p.map(x=>x.id===id?{...x,...update}:x)); }
     setSelected(p=>p&&p.id===id?{...p,...update}:p);
@@ -2284,9 +2313,7 @@ function App(){
   const cambiarStatusBloque=async(bloqueOrders, st, responsable)=>{
     const fb=getFB();
     for(const o of bloqueOrders){
-      // If going back to a pre-proceso status, clear the assigned project
-      const clearProyecto = PRE_PROCESO.includes(st) && o?.proyecto;
-      const extra = {status:st, ...(responsable?{responsable}:{}), ...(clearProyecto?{proyecto:""}:{})};
+      const extra = {status:st, ...(responsable?{responsable}:{})};
       if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), extra); }
       else { setOrders(p=>p.map(x=>x.id===o.id?{...x,...extra}:x)); }
     }
@@ -2301,13 +2328,10 @@ function App(){
   const asignarProyecto=async(id,proyecto)=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
-    // Only update the project field, do NOT change the status automatically
-    // Status will only advance when explicitly confirmed via confirmarProyecto
-    let nuevoStatus = o?.status||"pendiente";
-    if(!proyecto && nuevoStatus==="proceso") nuevoStatus="revision"; // if removing project, revert from proceso
-    if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{proyecto,status:nuevoStatus}); }
-    else { setOrders(p=>p.map(x=>x.id===id?{...x,proyecto,status:nuevoStatus}:x)); }
-    setSelected(p=>p&&p.id===id?{...p,proyecto,status:nuevoStatus}:p);
+    // Only update the project field, status change is handled separately via confirmarProyecto
+    if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{proyecto}); }
+    else { setOrders(p=>p.map(x=>x.id===id?{...x,proyecto}:x)); }
+    setSelected(p=>p&&p.id===id?{...p,proyecto}:p);
   };
   const confirmarProyecto=async(ids)=>{
     // Advance orders to "proceso" after confirming project assignment
