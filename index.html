@@ -67,6 +67,12 @@ body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--te
 .tab-btn { padding: 8px 20px; border-radius: 20px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: .875rem; font-weight: 700; font-family: 'Nunito',sans-serif; color: var(--muted); transition: all .18s; }
 .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
 .tab-btn.act { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 8px rgba(108,99,255,.3); }
+.tab-btn-wrap { position: relative; display: inline-flex; }
+.tab-dot { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; background: #dc2626; color: white; border-radius: 20px; font-size: .65rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); padding: 0 4px; pointer-events: none; }
+.st-incidencia { background: #fef3c7; color: #b45309; }
+.incidencia-item-row { display:flex; align-items:center; gap:10px; padding:.6rem .8rem; border-radius:10px; border:1.5px solid var(--border); background:white; cursor:pointer; transition:all .13s; user-select:none; }
+.incidencia-item-row:hover { border-color:#f59e0b; background:#fffbeb; }
+.incidencia-item-row.selected { border-color:#f59e0b; background:#fef9c3; }
 
 /* ── STAT CARDS ── */
 .stats-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 14px; margin-bottom: 2rem; }
@@ -439,6 +445,7 @@ const STATUS_LABELS = {
   realizado:"Realizado",
   recibido: "Recibido",
   rechazado:"Rechazado",
+  incidencia:"Incidencia",
 };
 const STATUS_COLORS = {
   pendiente:{bg:"#fff0f6",color:"#be185d"},
@@ -448,6 +455,7 @@ const STATUS_COLORS = {
   realizado:{bg:"#fff7ed",color:"#c2410c"},
   recibido: {bg:"#ecfdf5",color:"#047857"},
   rechazado:{bg:"#fef2f2",color:"#dc2626"},
+  incidencia:{bg:"#fef3c7",color:"#b45309"},
 };
 
 const CATS = [
@@ -633,18 +641,30 @@ function LoginModal({onClose,onSuccess}){
 /* ── ORDER DETAIL ── */
 const LOCKED_STATUSES = ["realizado","recibido","rechazado"];
 const PRE_PROCESO_STATUSES = ["pendiente","revision","aprobado"];
-function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto,proveedores=[]}){
+function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto,proveedores=[],onIncidencia}){
   const [confirmDel,setConfirmDel]=useState(false);
-  const [confirmRetro,setConfirmRetro]=useState(null); // target status to revert to
+  const [confirmRetro,setConfirmRetro]=useState(null);
   const [motivoRetro,setMotivoRetro]=useState("");
   const [motivoErr,setMotivoErr]=useState(false);
   const [editNotas,setEditNotas]=useState(false);
   const [notasDraft,setNotasDraft]=useState(order.notas||"");
   const [editResp,setEditResp]=useState(false);
   const [respDraft,setRespDraft]=useState(order.responsable||"");
+  const [editIdinet,setEditIdinet]=useState(false);
+  const [idineDraft,setIdineDraft]=useState(order.idinete||"");
+  const [confirmRealizado,setConfirmRealizado]=useState(false);
+  const [idinConfirmDraft,setIdinConfirmDraft]=useState(order.idinete||"");
+  const [idinConfirmErr,setIdinConfirmErr]=useState("");
+  const [showIncidencia,setShowIncidencia]=useState(false);
+  const [incidenciaItems,setIncidenciaItems]=useState({});
+  const [incidenciaNota,setIncidenciaNota]=useState("");
+  const [incidenciaErr,setIncidenciaErr]=useState("");
   const total=tot(order.products);
   const locked = !isAdmin && LOCKED_STATUSES.includes(order.status);
   const isEnProceso = order.status==="proceso";
+  const isRecibido = order.status==="recibido";
+  const showIdinet = isAdmin && ["realizado","recibido"].includes(order.status);
+  const displayId = order.idinete || order.id;
 
   const handleStatusClick=(s)=>{
     // Any backwards move (pre-proceso, or any status when currently advanced) requires confirmation
@@ -687,7 +707,7 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1.4rem"}}>
           <div>
             <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
-              <span style={{fontWeight:900,fontSize:"1.25rem",color:"var(--navy)",letterSpacing:"-.3px"}}>{order.id}</span>
+              <span style={{fontWeight:900,fontSize:"1.25rem",color:"var(--navy)",letterSpacing:"-.3px"}}>{displayId}</span>
               <StatusTag status={order.status}/>
               <CatTag cat={order.category}/>
             </div>
@@ -815,21 +835,139 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
               }
             </div>
 
-            {/* Excel download */}
-            <div>
-              <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📥 Descargar pedido</div>
-              {!order.responsable&&(
-                <div style={{fontSize:".74rem",color:"#dc2626",fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
-                  ⚠️ Debes asignar un <b>responsable</b> antes de descargar el Excel.
+            {/* Excel + Marcar realizado */}
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"flex-start"}}>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📥 Descargar pedido</div>
+                {!order.responsable&&<div style={{fontSize:".74rem",color:"#dc2626",fontWeight:700,marginBottom:6}}>⚠️ Asigna un <b>responsable</b> antes de descargar.</div>}
+                <button
+                  onClick={()=>{ if(!order.responsable)return; const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===order.proveedor.toLowerCase()); generatePedidoExcel(order.proveedor,[order],dbProv||null); }}
+                  disabled={!order.responsable}
+                  style={{background:order.responsable?"linear-gradient(135deg,#22c55e,#16a34a)":"#e5e7eb",color:order.responsable?"white":"#9ca3af",border:"none",borderRadius:9,padding:"8px 16px",fontSize:".82rem",fontWeight:800,cursor:order.responsable?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:order.responsable?"0 2px 8px rgba(34,197,94,.35)":"none"}}>
+                  📥 Descargar Excel
+                </button>
+              </div>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📦 Marcar como realizado</div>
+                {!confirmRealizado
+                  ? <button onClick={()=>{setConfirmRealizado(true);setIdinConfirmDraft(order.idinete||"");setIdinConfirmErr("");}}
+                      style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:9,padding:"8px 16px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:"0 2px 8px rgba(194,65,12,.35)"}}>
+                      📦 Pedido realizado →
+                    </button>
+                  : <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 12px",display:"flex",flexDirection:"column",gap:7}}>
+                      <div style={{fontSize:".75rem",fontWeight:800,color:"#c2410c"}}>Introduce el código IDinet <span style={{color:"#dc2626"}}>*</span></div>
+                      <div style={{display:"flex",gap:7,alignItems:"center"}}>
+                        <input value={idinConfirmDraft} onChange={e=>{setIdinConfirmDraft(e.target.value);setIdinConfirmErr("");}}
+                          placeholder="P-00000"
+                          style={{flex:1,padding:"6px 9px",border:"1.5px solid "+(idinConfirmErr?"#dc2626":"#fed7aa"),borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:800,outline:"none",letterSpacing:".05em"}}
+                          autoFocus onKeyDown={e=>e.key==="Enter"&&(()=>{
+                            if(!idinConfirmDraft.trim()){setIdinConfirmErr("Obligatorio");return;}
+                            onStatusChange(order.id,"realizado",{idinete:idinConfirmDraft.trim()});
+                            setConfirmRealizado(false);
+                          })()}
+                        />
+                        <button onClick={()=>{
+                            if(!idinConfirmDraft.trim()){setIdinConfirmErr("Código IDinet obligatorio");return;}
+                            onStatusChange(order.id,"realizado",{idinete:idinConfirmDraft.trim()});
+                            setConfirmRealizado(false);
+                          }}
+                          style={{background:"#c2410c",color:"white",border:"none",borderRadius:7,padding:"6px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>✓ Confirmar</button>
+                        <button onClick={()=>setConfirmRealizado(false)}
+                          style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"6px 9px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                      </div>
+                      {idinConfirmErr&&<div style={{fontSize:".72rem",color:"#dc2626",fontWeight:800}}>⚠️ {idinConfirmErr}</div>}
+                    </div>
+                }
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* IDinet field — realizado / recibido */}
+        {showIdinet&&(
+          <div style={{background:"#fefce8",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 14px",marginBottom:"1.2rem",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <div style={{fontSize:".7rem",fontWeight:800,color:"#a16207",textTransform:"uppercase",letterSpacing:".05em",minWidth:120}}>🏷️ Código IDinet</div>
+            {editIdinet
+              ? <div style={{display:"flex",gap:7,alignItems:"center",flex:1}}>
+                  <input value={idineDraft} onChange={e=>setIdineDraft(e.target.value)}
+                    placeholder="P-00000"
+                    style={{flex:1,padding:"5px 9px",border:"1.5px solid #fde68a",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".88rem",fontWeight:800,outline:"none",letterSpacing:".05em"}}
+                    autoFocus onKeyDown={e=>e.key==="Enter"&&(()=>{onStatusChange(order.id,order.status,{idinete:idineDraft.trim()});setEditIdinet(false);})()}/>
+                  <button onClick={()=>{onStatusChange(order.id,order.status,{idinete:idineDraft.trim()});setEditIdinet(false);}}
+                    style={{background:"#a16207",color:"white",border:"none",borderRadius:7,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
+                  <button onClick={()=>setEditIdinet(false)}
+                    style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"5px 8px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
                 </div>
-              )}
-              <button
-                onClick={()=>{ if(!order.responsable){return;} const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===order.proveedor.toLowerCase()); generatePedidoExcel(order.proveedor,[order],dbProv||null); }}
-                disabled={!order.responsable}
-                style={{background:order.responsable?"linear-gradient(135deg,#22c55e,#16a34a)":"#e5e7eb",color:order.responsable?"white":"#9ca3af",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:order.responsable?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:order.responsable?"0 2px 8px rgba(34,197,94,.35)":"none"}}>
-                📥 Descargar Excel del pedido
+              : <div style={{display:"flex",gap:8,alignItems:"center",flex:1}}>
+                  <span style={{fontWeight:900,fontSize:"1rem",color:order.idinete?"#92400e":"var(--muted)",fontStyle:order.idinete?"normal":"italic",letterSpacing:".05em"}}>
+                    {order.idinete||"Sin código IDinet asignado"}
+                  </span>
+                  <button onClick={()=>{setEditIdinet(true);setIdineDraft(order.idinete||"");}}
+                    style={{background:"#fef9c3",color:"#a16207",border:"1.5px solid #fde68a",borderRadius:7,padding:"4px 10px",fontSize:".72rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✏️ {order.idinete?"Editar":"Asignar"}</button>
+                </div>
+            }
+          </div>
+        )}
+
+        {/* Incidencias button — recibido only */}
+        {isAdmin&&isRecibido&&!showIncidencia&&(
+          <div style={{marginBottom:"1rem"}}>
+            <button onClick={()=>{setShowIncidencia(true);setIncidenciaItems({});setIncidenciaNota("");setIncidenciaErr("");}}
+              style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:"0 2px 8px rgba(217,119,6,.3)"}}>
+              ⚠️ Abrir incidencia / devolución
+            </button>
+          </div>
+        )}
+        {isAdmin&&isRecibido&&showIncidencia&&(
+          <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:14,padding:"14px 16px",marginBottom:"1.2rem"}}>
+            <div style={{fontWeight:900,fontSize:".9rem",color:"#b45309",marginBottom:8}}>⚠️ Abrir incidencia / devolución</div>
+            <div style={{fontSize:".78rem",color:"#92400e",fontWeight:600,marginBottom:10}}>Selecciona los artículos con incidencia. Si seleccionas todos, el pedido completo volverá a "Pendiente". Si seleccionas solo algunos, se creará un pedido separado en estado "Incidencia".</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
+              {order.products.map((p,i)=>{
+                const sel=!!incidenciaItems[i];
+                return(
+                  <div key={i} className={`incidencia-item-row${sel?" selected":""}`} onClick={()=>setIncidenciaItems(prev=>({...prev,[i]:!prev[i]}))}>
+                    <div style={{width:20,height:20,borderRadius:5,border:"2px solid "+(sel?"#f59e0b":"var(--border)"),background:sel?"#f59e0b":"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>{sel?"✓":""}</div>
+                    <span style={{flex:1,fontWeight:700,fontSize:".85rem",color:"var(--navy)"}}>{p.nombre}</span>
+                    <span style={{fontSize:".75rem",color:"var(--muted)",fontWeight:600}}>{p.unidades}× {eur(p.precio)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{marginBottom:8}}>
+              <div style={{fontSize:".7rem",fontWeight:800,color:"#b45309",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📝 Descripción de la incidencia <span style={{color:"#dc2626"}}>*</span></div>
+              <textarea value={incidenciaNota} onChange={e=>{setIncidenciaNota(e.target.value);setIncidenciaErr("");}}
+                placeholder="Describe el problema: artículo dañado, cantidad incorrecta, no corresponde al pedido…"
+                style={{width:"100%",padding:"8px 10px",border:"1.5px solid "+(incidenciaErr?"#dc2626":"#fde68a"),borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".84rem",fontWeight:600,outline:"none",resize:"vertical",minHeight:60,background:"white"}}/>
+              {incidenciaErr&&<div style={{fontSize:".72rem",color:"#dc2626",fontWeight:800,marginTop:3}}>⚠️ {incidenciaErr}</div>}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{
+                  const selIdx=Object.entries(incidenciaItems).filter(([,v])=>v).map(([k])=>Number(k));
+                  if(selIdx.length===0){setIncidenciaErr("Selecciona al menos un artículo.");return;}
+                  if(!incidenciaNota.trim()){setIncidenciaErr("La descripción de la incidencia es obligatoria.");return;}
+                  onIncidencia(order,selIdx,incidenciaNota.trim());
+                  setShowIncidencia(false);
+                }}
+                style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",color:"white",border:"none",borderRadius:9,padding:"8px 16px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                ⚠️ Confirmar incidencia
+              </button>
+              <button onClick={()=>setShowIncidencia(false)}
+                style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:9,padding:"8px 14px",fontSize:".82rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                Cancelar
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Pasar a En proceso — visible for revision/aprobado with responsable */}
+        {isAdmin && ["revision","aprobado"].includes(order.status) && order.responsable && order.proyecto && (
+          <div style={{marginBottom:"1.2rem",display:"flex",gap:10,alignItems:"center",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 14px",flexWrap:"wrap"}}>
+            <span style={{fontSize:".82rem",fontWeight:700,color:"#15803d",flex:1}}>✅ Proyecto y responsable asignados. ¿Listo para pasar a proceso?</span>
+            <button onClick={()=>onStatusChange(order.id,"proceso")}
+              style={{background:"linear-gradient(135deg,#22c55e,#15803d)",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(21,128,61,.35)"}}>
+              🔄 Pasar a "En proceso" →
+            </button>
           </div>
         )}
 
@@ -2240,6 +2378,63 @@ function PorProveedorActivo({orders, onCambiarStatusBloque}){
   );
 }
 
+/* ── INCIDENCIAS TAB ── */
+function IncidenciasTab({orders, onStatusChange}){
+  const incidencias = orders.filter(o=>o.status==="incidencia");
+  if(incidencias.length===0) return(
+    <div style={{textAlign:"center",padding:"3rem",color:"var(--muted)",fontWeight:600,fontSize:".95rem"}}>
+      <div style={{fontSize:"2.5rem",marginBottom:".75rem"}}>✅</div>
+      No hay incidencias abiertas.
+    </div>
+  );
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 14px",fontSize:".8rem",color:"#92400e",fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+        ⚠️ Estos pedidos tienen artículos con incidencia o devolución pendiente de gestión.
+      </div>
+      {incidencias.map(o=>(
+        <div key={o.id} style={{background:"white",borderRadius:14,border:"1.5px solid #fde68a",boxShadow:"0 2px 8px rgba(217,119,6,.1)",overflow:"hidden"}}>
+          <div style={{padding:"1rem 1.2rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10}}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                <span style={{fontWeight:900,fontSize:".95rem",color:"#92400e"}}>{o.id}</span>
+                <span className="tag st-incidencia">⚠️ Incidencia</span>
+                <span style={{fontSize:".75rem",color:"var(--muted)",fontWeight:600}}>{o.date}</span>
+              </div>
+              {o.origenId&&<div style={{fontSize:".72rem",color:"var(--muted)",fontWeight:600,marginBottom:3}}>Origen: <b>{o.origenId}</b></div>}
+              <div style={{fontSize:".78rem",color:"var(--muted)",fontWeight:600}}>🏪 {o.proveedor} · {o.products.length} artículo{o.products.length!==1?"s":""}</div>
+              {o.notas&&<div style={{fontSize:".78rem",color:"#92400e",fontWeight:700,marginTop:4,background:"#fef9c3",borderRadius:7,padding:"4px 8px",maxWidth:400}}>{o.notas}</div>}
+            </div>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+              <button onClick={()=>onStatusChange(o.id,"pendiente")}
+                style={{background:"linear-gradient(135deg,#818cf8,#6c63ff)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                ↩️ Reenviar como nuevo pedido
+              </button>
+              <button onClick={()=>onStatusChange(o.id,"rechazado")}
+                style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fecaca",borderRadius:9,padding:"7px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                🗑️ Cerrar sin reenviar
+              </button>
+            </div>
+          </div>
+          <table className="ptable" style={{borderTop:"1px solid var(--border)"}}>
+            <thead><tr><th>Artículo</th><th>Código</th><th style={{textAlign:"right"}}>Uds.</th><th style={{textAlign:"right"}}>Precio</th></tr></thead>
+            <tbody>
+              {o.products.map((p,i)=>(
+                <tr key={i}>
+                  <td style={{fontWeight:800}}>{p.nombre}</td>
+                  <td style={{color:"var(--muted)",fontSize:".78rem"}}>{p.codigo||"—"}</td>
+                  <td style={{textAlign:"right"}}>{p.unidades}</td>
+                  <td style={{textAlign:"right",fontWeight:800,color:"var(--accent)"}}>{eur(p.precio)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── APP ── */
 function App(){
   const { useEffect } = React;
@@ -2325,6 +2520,47 @@ function App(){
     else { setOrders(p=>p.filter(x=>x.id!==id)); }
     setSelected(null);
   };
+  const crearIncidencia=async(order, selIdx, nota)=>{
+    const fb=getFB();
+    const selProds = selIdx.map(i=>order.products[i]);
+    const restProds = order.products.filter((_,i)=>!selIdx.includes(i));
+    const allSelected = restProds.length===0;
+    const ts=Date.now();
+    if(allSelected){
+      // All items → revert whole order to pendiente, clear project/responsable, append note
+      const notaUpd = (order.notas||"") + (order.notas?"
+
+":"") + "[Incidencia: "+nota+"]";
+      const upd = {status:"pendiente",proyecto:"",responsable:"",notas:notaUpd};
+      if(fb&&order._docId) await fb.updateDoc(fb.doc(fb.db,"orders",order._docId),upd);
+      else setOrders(p=>p.map(x=>x.id===order.id?{...x,...upd}:x));
+      setSelected(null);
+    } else {
+      // Partial → create new incidencia order with selected items
+      const incId="INC-"+String(ts).slice(-5);
+      const incOrder={
+        id:incId, date:new Date().toISOString().split("T")[0],
+        status:"incidencia",
+        category:order.category,
+        solicitante:order.solicitante||"",
+        responsable:order.responsable||"",
+        proveedor:order.proveedor,
+        notas:"[Incidencia sobre "+order.id+(order.idinete?" / "+order.idinete:"")+": "+nota+"]",
+        proyecto:order.proyecto||"",
+        bloque:"",
+        idinete:"",
+        products:selProds,
+        origenId:order.id,
+      };
+      if(fb){
+        await fb.addDoc(fb.collection(fb.db,"orders"),incOrder);
+      } else {
+        setOrders(p=>[incOrder,...p]);
+      }
+      setSelected(null);
+    }
+  };
+
   const asignarProyecto=async(id,proyecto)=>{
     const fb=getFB();
     const o=orders.find(x=>x.id===id);
@@ -2513,10 +2749,17 @@ function App(){
         {isAdmin&&(
           <div className="tabs">
             <button className={`tab-btn${tab==="pedidos"?" act":""}`} onClick={()=>setTab("pedidos")}>📋 Pedidos</button>
-            <button className={`tab-btn${tab==="resumen"?" act":""}`} onClick={()=>setTab("resumen")}>📊 Resumen</button>
+            <div className="tab-btn-wrap">
+              <button className={`tab-btn${tab==="resumen"?" act":""}`} onClick={()=>setTab("resumen")}>📊 Resumen</button>
+              {orders.filter(o=>o.status==="revision").length>0&&<span className="tab-dot">{orders.filter(o=>o.status==="revision").length}</span>}
+            </div>
             <button className={`tab-btn${tab==="proyectos"?" act":""}`} onClick={()=>setTab("proyectos")}>📁 Proyectos</button>
             <button className={`tab-btn${tab==="proveedores"?" act":""}`} onClick={()=>setTab("proveedores")}>🏪 Proveedores</button>
             <button className={`tab-btn${tab==="catalogo"?" act":""}`} onClick={()=>setTab("catalogo")}>📦 Catálogo</button>
+            <div className="tab-btn-wrap">
+              <button className={`tab-btn${tab==="incidencias"?" act":""}`} onClick={()=>setTab("incidencias")} style={tab==="incidencias"?{background:"#d97706",borderColor:"#d97706"}:{}}>⚠️ Incidencias</button>
+              {orders.filter(o=>o.status==="incidencia").length>0&&<span className="tab-dot">{orders.filter(o=>o.status==="incidencia").length}</span>}
+            </div>
           </div>
         )}
 
@@ -2527,6 +2770,8 @@ function App(){
           ? <ProviderDB proveedores={proveedores} setProveedores={setProveedores}/>
           : tab==="proyectos"&&isAdmin
           ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
+          : tab==="incidencias"&&isAdmin
+          ? <IncidenciasTab orders={orders} onStatusChange={changeStatus}/>
           : tab==="resumen"&&isAdmin
           ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onConfirmarProyecto={confirmarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} isAdmin={isAdmin} initialDashTab={initialDashTab} proveedores={proveedores}/>
           : (
@@ -2561,7 +2806,7 @@ function App(){
                   <div className="order-card" key={o.id} onClick={()=>setSelected(o)}>
                     <div className="order-card-left">
                       <div className="order-meta">
-                        <span className="order-id">{o.id}</span>
+                        <span className="order-id">{o.idinete||o.id}</span>
                         <StatusTag status={o.status}/>
                         <CatTag cat={o.category}/>
                         {isAdmin&&o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
@@ -2595,7 +2840,7 @@ function App(){
       </main>
       {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos} proveedores={proveedores} catalogo={catalogo}/>}
       {showLogin &&<LoginModal onClose={()=>setShowLogin(false)} onSuccess={()=>{setIsAdmin(true);setShowLogin(false);}}/>}
-      {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder} proyectos={proyectos} onAsignarProyecto={asignarProyecto} proveedores={proveedores}/>}
+      {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder} proyectos={proyectos} onAsignarProyecto={asignarProyecto} proveedores={proveedores} onIncidencia={crearIncidencia}/>}
     </>
   );
 }
