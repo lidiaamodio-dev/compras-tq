@@ -430,6 +430,2973 @@ const STATUSES = [
   {key:"todos",    label:"Todos"},
   {key:"pendiente",label:"⏳ Pendiente"},
   {key:"revision", label:"📋 Por gestionar"},
+  {key:"proceso",  label:"🔄 En proceso"},
+  {key:"realizado",label:"📦 Realizado"},
+  {key:"recibido", label:"✔️ Recibido"},
+  {key:"rechazado",label:"❌ Rechazado"},
+];
+
+const STATUS_LABELS = {
+  pendiente:"Pendiente",
+  revision: "Por gestionar",
+  aprobado: "Gestión incidencias",
+  proceso:  "En proceso",
+  realizado:"Realizado",
+  recibido: "Recibido",
+  rechazado:"Rechazado",
+  incidencia:"Incidencia",
+};
+const STATUS_COLORS = {
+  pendiente:{bg:"#fff0f6",color:"#be185d"},
+  revision: {bg:"#eff6ff",color:"#1d4ed8"},
+  aprobado: {bg:"#fef9c3",color:"#a16207"},
+  proceso:  {bg:"#f5f3ff",color:"#6d28d9"},
+  realizado:{bg:"#fff7ed",color:"#c2410c"},
+  recibido: {bg:"#ecfdf5",color:"#047857"},
+  rechazado:{bg:"#fef2f2",color:"#dc2626"},
+  incidencia:{bg:"#fef3c7",color:"#b45309"},
+};
+
+const CATS = [
+  {key:"reactivos",  label:"Reactivos",  emoji:"🧪"},
+  {key:"disolventes",label:"Disolventes",emoji:"💧"},
+  {key:"gases",      label:"Gases",      emoji:"🫧"},
+  {key:"racoreria",  label:"Racorería",  emoji:"🔩"},
+  {key:"otros",      label:"Otros",      emoji:"📦"},
+];
+const CAT_COLORS = {reactivos:"#22c55e",disolventes:"#a855f7",gases:"#ec4899",racoreria:"#3b82f6",otros:"#f97316"};
+
+const fmt = d  => new Date(d).toLocaleDateString("es-ES");
+const eur = n  => Number(n).toFixed(2)+" €";
+const gid = () => "#"+Math.floor(100000+Math.random()*900000);
+const tot = ps => ps.reduce((s,p)=>s+Number(p.unidades)*Number(p.precio),0);
+const initialOrders = [
+  {id:"PED-000001",date:"2026-02-03",status:"recibido",category:"racoreria",solicitante:"Laura Martínez",responsable:"Carlos Gómez",proveedor:"Swagelok",notas:"Para el sistema de vacío del lab 3",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"SS-200-1-4",nombre:"Conector recto 1/4\" SS",unidades:10,precio:18.50,url:""},{codigo:"SS-400-2-4",nombre:"Codo 90° 1/4\" SS",unidades:6,precio:22.00,url:""},{codigo:"SS-8-VCR-1",nombre:"Fitting VCR macho 1/2\"",unidades:4,precio:34.90,url:""}]},
+  {id:"PED-000002",date:"2026-02-05",status:"recibido",category:"racoreria",solicitante:"Marcos Vidal",responsable:"Carlos Gómez",proveedor:"Swagelok",notas:"Renovación stock general",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"SS-400-1-4",nombre:"Racor T 1/4\" SS",unidades:8,precio:26.40,url:""},{codigo:"B-SS4-A",nombre:"Válvula de bola 1/4\" SS",unidades:2,precio:89.00,url:""},{codigo:"SS-200-R-4",nombre:"Reductor 1/4\" a 1/8\" SS",unidades:5,precio:15.20,url:""}]},
+  {id:"PED-000003",date:"2026-02-10",status:"realizado",category:"gases",solicitante:"Lidia Amodio",responsable:"José Fernández",proveedor:"Nippon Gases España SLU",notas:"Reposición gases laboratorio análisis",proyecto:"CIRPLACAR",bloque:"",
+   products:[{codigo:"HE-50L",nombre:"Helio 5.0 botella 50L",unidades:2,precio:230.00,url:""},{codigo:"N2-200L",nombre:"Nitrógeno líquido 200L",unidades:1,precio:180.00,url:""},{codigo:"AR-50L",nombre:"Argón 4.8 botella 50L",unidades:1,precio:195.00,url:""}]},
+  {id:"PED-000004",date:"2026-02-12",status:"realizado",category:"gases",solicitante:"Tomás Ruiz",responsable:"José Fernández",proveedor:"Nippon Gases España SLU",notas:"Gas para cromatógrafo",proyecto:"CIRPLACAR",bloque:"",
+   products:[{codigo:"H2-10L",nombre:"Hidrógeno 6.0 botella 10L",unidades:3,precio:145.00,url:""},{codigo:"CO2-50L",nombre:"CO₂ 4.5 botella 50L",unidades:2,precio:98.00,url:""}]},
+  {id:"PED-000005",date:"2026-02-14",status:"proceso",category:"reactivos",solicitante:"Ana Belén Soto",responsable:"",proveedor:"Sigma-Aldrich",notas:"Reactivos síntesis Q1",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"320331",nombre:"Acetonitrilo HPLC grade 2.5L",unidades:4,precio:67.50,url:"https://www.sigmaaldrich.com"},{codigo:"270725",nombre:"Ácido trifluoroacético 100mL",unidades:2,precio:42.00,url:"https://www.sigmaaldrich.com"},{codigo:"179418",nombre:"DMSO anhidro 100mL",unidades:3,precio:38.90,url:""}]},
+  {id:"PED-000006",date:"2026-02-15",status:"proceso",category:"gases",solicitante:"Lidia Amodio",responsable:"",proveedor:"Linde Gas",notas:"Gases especiales espectroscopía",proyecto:"",bloque:"",
+   products:[{codigo:"SF6-2L",nombre:"Hexafluoruro de azufre 2L",unidades:1,precio:312.00,url:""},{codigo:"N2O-10L",nombre:"Óxido nitroso puro 10L",unidades:2,precio:187.00,url:""}]},
+  {id:"PED-000007",date:"2026-02-17",status:"pendiente",category:"racoreria",solicitante:"Marcos Vidal",responsable:"",proveedor:"Swagelok",notas:"",proyecto:"",bloque:"",
+   products:[{codigo:"SS-600-1-8",nombre:"Conector recto 3/8\" SS",unidades:12,precio:21.30,url:""},{codigo:"SS-810-1-8",nombre:"Tubo SS 316 3/8\" x 1m",unidades:5,precio:45.00,url:""}]},
+  {id:"PED-000008",date:"2026-02-18",status:"pendiente",category:"disolventes",solicitante:"Carmen Ibáñez",responsable:"",proveedor:"VWR International",notas:"Disolventes para extracción",proyecto:"",bloque:"",
+   products:[{codigo:"ETOH-2.5L",nombre:"Etanol absoluto 2.5L",unidades:6,precio:28.40,url:""},{codigo:"HEXANO-1L",nombre:"n-Hexano HPLC 1L",unidades:4,precio:34.90,url:""},{codigo:"DCMETH-1L",nombre:"Diclorometano grado análisis 1L",unidades:3,precio:22.60,url:""}]},
+  {id:"PED-000009",date:"2026-02-19",status:"pendiente",category:"reactivos",solicitante:"Tomás Ruiz",responsable:"",proveedor:"Sigma-Aldrich",notas:"Patrones para calibración HPLC",proyecto:"CIRPLACAR",bloque:"",
+   products:[{codigo:"47489",nombre:"Cafeína estándar analítico 1g",unidades:1,precio:56.00,url:""},{codigo:"33615",nombre:"Sacarosa patrón primario 100g",unidades:2,precio:31.50,url:""}]},
+  {id:"PED-000010",date:"2026-02-20",status:"revision",category:"gases",solicitante:"Laura Martínez",responsable:"",proveedor:"Nippon Gases España SLU",notas:"Revisar precios antes de confirmar",proyecto:"BIOCTANE",bloque:"",
+   products:[{codigo:"O2-50L",nombre:"Oxígeno 5.0 botella 50L",unidades:2,precio:210.00,url:""},{codigo:"HE-10L",nombre:"Helio 6.0 botella 10L",unidades:1,precio:540.00,url:""}]},
+];
+function getFB(){ return window._fb||null; }
+
+function StatusTag({status}){
+  return <span className={`tag st-${status}`}>{STATUS_LABELS[status]||status}</span>;
+}
+function CatTag({cat}){
+  const c=CATS.find(x=>x.key===cat);
+  return <span className={`tag tag-cat ${cat}`}>{c?c.emoji+" "+c.label:cat}</span>;
+}
+
+/* ── NEW REQUEST ── */
+function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=[]}){
+  const [form,setForm]=useState({solicitante:"",proveedor:"",category:"",notas:"",proyecto:""});
+  const [prods,setProds]=useState([{codigo:"",nombre:"",unidades:1,precio:0,url:""}]);
+  const [err,setErr]=useState("");
+  const [provOtro,setProvOtro]=useState(false);
+  const [showCatalog,setShowCatalog]=useState(false);
+  const [suggest,setSuggest]=useState([]); // autocomplete suggestions
+  const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const addFromCatalog=items=>{ setProds(ps=>{ const base=ps.filter(p=>p.nombre.trim()); return [...base,...items]; }); };
+  const sp=(i,k,v)=>setProds(ps=>ps.map((p,idx)=>idx===i?{...p,[k]:v}:p));
+  const total=tot(prods);
+  const submit=()=>{
+    if(!form.solicitante.trim()) return setErr("El campo Solicitante es obligatorio.");
+    if(!form.proveedor.trim())   return setErr("El campo Proveedor es obligatorio.");
+    if(!form.category)           return setErr("Selecciona una categoría.");
+    if(prods.some(p=>!p.nombre.trim())) return setErr("Completa el nombre de todos los productos.");
+    setErr("");
+    onSubmit({id:gid(),date:new Date().toISOString().split("T")[0],status:"pendiente",
+      category:form.category,solicitante:form.solicitante,responsable:"",proveedor:form.proveedor,
+      notas:form.notas,proyecto:form.proyecto,products:prods});
+  };
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <h2>✨ Nueva Solicitud de Compra</h2>
+        {err&&<div className="err-msg">⚠️ {err}</div>}
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Solicitante <span className="req">*</span></label>
+            <input className="form-input" placeholder="Tu nombre y apellidos" value={form.solicitante} onChange={e=>sf("solicitante",e.target.value)}/>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Proveedor <span className="req">*</span></label>
+            {proveedores.length>0&&!provOtro
+              ? <div style={{display:"flex",gap:6}}>
+                  <select className="form-input" style={{flex:1}} value={form.proveedor}
+                    onChange={e=>{ if(e.target.value==="__otro__"){ setProvOtro(true); sf("proveedor",""); } else { sf("proveedor",e.target.value); } }}>
+                    <option value="">— Selecciona proveedor —</option>
+                    {proveedores.map(p=><option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                    <option value="__otro__">✏️ Otro (escribir manualmente)…</option>
+                  </select>
+                </div>
+              : <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input className="form-input" style={{flex:1}} placeholder="Nombre del proveedor" value={form.proveedor} onChange={e=>sf("proveedor",e.target.value)} autoFocus={provOtro}/>
+                  {proveedores.length>0&&<button type="button" onClick={()=>{setProvOtro(false);sf("proveedor","");}} style={{background:"#f1f5f9",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",cursor:"pointer",fontSize:".8rem",fontWeight:700,fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>← Lista</button>}
+                </div>
+            }
+          </div>
+        </div>
+        <div className="form-group" style={{marginTop:14}}>
+          <label className="form-label">Categoría <span className="req">*</span></label>
+          <div className="cat-grid">
+            {CATS.map(c=>(
+              <label key={c.key} className={`cat-option${form.category===c.key?" sel":""}`} onClick={()=>sf("category",c.key)}>
+                <input type="radio" name="cat" value={c.key} checked={form.category===c.key} onChange={()=>{}}/>
+                <span className="ce">{c.emoji}</span>{c.label}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Uso / Observaciones <span className="opt">(obligatorio indicar el uso)</span></label>
+          <textarea className="form-input" placeholder="Indica el uso: p.ej. síntesis de zeolitas, reactivo genérico de laboratorio, calibración de equipo, etc." value={form.notas} onChange={e=>sf("notas",e.target.value)}/>
+        </div>
+        <div className="form-group">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:6}}>
+            <label className="form-label" style={{marginBottom:0}}>Detalles del pedido <span className="req">*</span></label>
+            <div style={{display:"flex",gap:6}}>
+              {catalogo.length>0&&<button type="button" className="btn-add" style={{background:"#fff8ed",color:"#ea580c",border:"1.5px solid #fed7aa"}} onClick={()=>setShowCatalog(true)}>📦 Desde catálogo</button>}
+              <button className="btn-add" onClick={()=>setProds(ps=>[...ps,{codigo:"",nombre:"",unidades:1,precio:0,url:""}])}>+ Añadir producto</button>
+            </div>
+          </div>
+          <div className="products-header">
+            <span>Código</span><span>Nombre del producto</span><span>URL <span style={{fontWeight:500,fontSize:".65rem"}}>(opcional)</span></span><span>Uds.</span><span>€/ud</span><span></span>
+          </div>
+          {prods.map((p,i)=>(
+            <div className="product-row" key={i}>
+              <input className="form-input" placeholder="REF-001" value={p.codigo} onChange={e=>sp(i,"codigo",e.target.value)}/>
+              <div style={{position:"relative"}}>
+                <input className="form-input" placeholder="Nombre del producto" value={p.nombre}
+                  onChange={e=>{ sp(i,"nombre",e.target.value); const v=e.target.value.toLowerCase(); setSuggest(v.length>1?catalogo.filter(c=>c.nombre.toLowerCase().includes(v)).slice(0,5):[]); }}
+                  onBlur={()=>setTimeout(()=>setSuggest([]),200)}/>
+                {suggest.length>0&&(
+                  <div className="suggest-box">
+                    {suggest.map(s=>(
+                      <div key={s.id} className="suggest-item" onMouseDown={()=>{ sp(i,"nombre",s.nombre); sp(i,"codigo",s.codigo||""); sp(i,"precio",s.precio||0); sp(i,"url",s.url||""); setSuggest([]); }}>
+                        <span>📦</span>
+                        <div><div style={{fontWeight:800}}>{s.nombre}</div><div style={{fontSize:".68rem",color:"var(--muted)"}}>{s.proveedor&&"🏪 "+s.proveedor} {s.precio>0&&"· "+eur(s.precio)}</div></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <input className="form-input" placeholder="https://…" value={p.url||""} onChange={e=>sp(i,"url",e.target.value)}/>
+              <input className="form-input" type="number" min="1" value={p.unidades} onChange={e=>sp(i,"unidades",e.target.value)}/>
+              <input className="form-input" type="number" min="0" step="0.01" value={p.precio} onChange={e=>sp(i,"precio",e.target.value)}/>
+              {prods.length>1?<button className="btn-remove" onClick={()=>setProds(ps=>ps.filter((_,idx)=>idx!==i))}>✕</button>:<div/>}
+            </div>
+          ))}
+          <div className="total-line">Total estimado: {eur(total)}</div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn-sec" onClick={onClose}>Cancelar</button>
+          <button className="btn-primary" onClick={submit}>💾 Enviar Solicitud</button>
+        </div>
+      </div>
+      {showCatalog&&<CatalogModal catalogo={catalogo} onClose={()=>setShowCatalog(false)} onAdd={addFromCatalog}/>}
+    </div>
+  );
+}
+
+/* ── LOGIN ── */
+function LoginModal({onClose,onSuccess}){
+  const [pw,setPw]=useState(""); const [err,setErr]=useState("");
+  const go=()=>pw===ADMIN_PASSWORD?onSuccess():setErr("Contraseña incorrecta.");
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal modal-sm">
+        <div className="lbox">
+          <h2>🔐 Acceso Admin</h2>
+          <p className="sub">Introduce la contraseña para gestionar los pedidos</p>
+          {err&&<div className="err-msg">{err}</div>}
+          <input className="form-input" type="password" placeholder="Contraseña" value={pw}
+            onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoFocus/>
+          <div className="modal-footer" style={{justifyContent:"space-between"}}>
+            <button className="btn-sec" onClick={onClose}>Cancelar</button>
+            <button className="btn-primary" onClick={go}>Entrar →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── ORDER DETAIL ── */
+const LOCKED_STATUSES = ["realizado","recibido","rechazado"];
+const PRE_PROCESO_STATUSES = ["pendiente","revision","aprobado"];
+function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyectos=[],onAsignarProyecto,proveedores=[],onIncidencia}){
+  const [confirmDel,setConfirmDel]=useState(false);
+  const [confirmRetro,setConfirmRetro]=useState(null);
+  const [motivoRetro,setMotivoRetro]=useState("");
+  const [motivoErr,setMotivoErr]=useState(false);
+  const [editNotas,setEditNotas]=useState(false);
+  const [notasDraft,setNotasDraft]=useState(order.notas||"");
+  const [editResp,setEditResp]=useState(false);
+  const [respDraft,setRespDraft]=useState(order.responsable||"");
+  const [editIdinet,setEditIdinet]=useState(false);
+  const [idineDraft,setIdineDraft]=useState(order.idinete||"");
+  const [confirmRealizado,setConfirmRealizado]=useState(false);
+  const [idinConfirmDraft,setIdinConfirmDraft]=useState(order.idinete||"");
+  const [idinConfirmErr,setIdinConfirmErr]=useState("");
+  const [showIncidencia,setShowIncidencia]=useState(false);
+  const [incidenciaItems,setIncidenciaItems]=useState({});
+  const [incidenciaNota,setIncidenciaNota]=useState("");
+  const [incidenciaErr,setIncidenciaErr]=useState("");
+  const total=tot(order.products);
+  const locked = !isAdmin && LOCKED_STATUSES.includes(order.status);
+  const isEnProceso = order.status==="proceso";
+  const isRecibido = order.status==="recibido";
+  const showIdinet = isAdmin && ["realizado","recibido"].includes(order.status);
+  const displayId = order.idinete || order.id;
+
+  const handleStatusClick=(s)=>{
+    // Any backwards move (pre-proceso, or any status when currently advanced) requires confirmation
+    const STATUS_ORDER_MAP = {pendiente:0,revision:1,aprobado:2,proceso:3,realizado:4,recibido:5,rechazado:6};
+    const isGoingBack = (STATUS_ORDER_MAP[s]??9) < (STATUS_ORDER_MAP[order.status]??9);
+    if(isGoingBack){
+      setConfirmRetro(s);
+      setMotivoRetro("");
+      setMotivoErr(false);
+    } else {
+      onStatusChange(order.id,s);
+    }
+  };
+
+  const confirmRevert=()=>{
+    if(!motivoRetro.trim()){ setMotivoErr(true); return; }
+    // Reset to original user-submitted state: clear proyecto, responsable, keep original notas + append motivo
+    const notaOriginal = order.notas||"";
+    const notaConMotivo = notaOriginal
+      ? notaOriginal + "\n\n[Devuelto a \"" + STATUS_LABELS[confirmRetro] + "\" — " + motivoRetro.trim() + "]"
+      : "[Devuelto a \"" + STATUS_LABELS[confirmRetro] + "\" — " + motivoRetro.trim() + "]";
+    onStatusChange(order.id, confirmRetro, {proyecto:"", responsable:"", notas: notaConMotivo});
+    setConfirmRetro(null);
+    setMotivoRetro("");
+    setMotivoErr(false);
+  };
+
+  const saveNotas=()=>{ onStatusChange(order.id, order.status, {notas: notasDraft}); setEditNotas(false); };
+  const [respErr,setRespErr]=useState("");
+  const saveResp=()=>{
+    if(!respDraft.trim()){ setRespErr("El responsable es obligatorio."); return; }
+    setRespErr("");
+    onStatusChange(order.id, order.status, {responsable: respDraft});
+    setEditResp(false);
+  };
+
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1.4rem"}}>
+          <div>
+            <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
+              <span style={{fontWeight:900,fontSize:"1.25rem",color:"var(--navy)",letterSpacing:"-.3px"}}>{displayId}</span>
+              <StatusTag status={order.status}/>
+              <CatTag cat={order.category}/>
+            </div>
+            <div style={{fontSize:".78rem",color:"var(--muted)",fontWeight:600,display:"flex",gap:12,flexWrap:"wrap"}}>
+              <span>📅 {fmt(order.date)}</span>
+              {isAdmin&&order.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"1px 8px",borderRadius:20,fontWeight:700}}>📁 {order.proyecto}</span>}
+            </div>
+          </div>
+          {isAdmin&&(
+            <div style={{textAlign:"right"}}>
+              <div style={{fontWeight:900,fontSize:"1.5rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(total)}</div>
+              <div style={{fontSize:".7rem",color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:".04em"}}>Total</div>
+            </div>
+          )}
+        </div>
+
+        {/* Confirm retroceder banner */}
+        {confirmRetro&&(
+          <div style={{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:14,padding:"14px 16px",marginBottom:"1rem",display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{fontWeight:900,fontSize:".9rem",color:"#dc2626",display:"flex",alignItems:"center",gap:8}}>
+              ⚠️ ¿Devolver a "{STATUS_LABELS[confirmRetro]}"?
+            </div>
+            <div style={{fontSize:".78rem",color:"#7f1d1d",fontWeight:600,lineHeight:1.5}}>
+              El pedido se restablecerá al estado original: se eliminarán el <b>proyecto asignado</b> y el <b>responsable</b>. Esta acción quedará registrada en las notas.
+            </div>
+            <div>
+              <div style={{fontSize:".72rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"#dc2626",marginBottom:5}}>
+                📝 Motivo del retroceso <span style={{color:"#dc2626"}}>*</span>
+              </div>
+              <textarea
+                autoFocus
+                value={motivoRetro}
+                onChange={e=>{setMotivoRetro(e.target.value);setMotivoErr(false);}}
+                placeholder="Explica por qué se devuelve este pedido…"
+                style={{width:"100%",padding:"8px 10px",border:"1.5px solid "+(motivoErr?"#dc2626":"#fca5a5"),borderRadius:9,fontFamily:"'Nunito',sans-serif",fontSize:".84rem",fontWeight:600,outline:"none",resize:"vertical",minHeight:62,background:"white"}}
+              />
+              {motivoErr&&<div style={{fontSize:".72rem",color:"#dc2626",fontWeight:800,marginTop:3}}>⚠️ El motivo es obligatorio para poder retroceder.</div>}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={confirmRevert}
+                style={{background:"#dc2626",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6}}>
+                ↩️ Confirmar retroceso
+              </button>
+              <button onClick={()=>{setConfirmRetro(null);setMotivoRetro("");setMotivoErr(false);}}
+                style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:9,padding:"8px 14px",fontSize:".82rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isAdmin&&(
+          <div className="admin-zone">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div className="admin-zone-title" style={{marginBottom:0}}>⚙️ Cambiar estado del pedido</div>
+              {!confirmDel
+                ?<button onClick={()=>setConfirmDel(true)} style={{background:"#fff0f6",color:"#e11d48",border:"1.5px solid #fecdd3",borderRadius:8,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:5}}>🗑️ Eliminar solicitud</button>
+                :<div style={{display:"flex",alignItems:"center",gap:8,background:"#fef2f2",borderRadius:10,padding:"6px 12px",border:"1.5px solid #fecaca"}}>
+                  <span style={{fontSize:".78rem",fontWeight:700,color:"#dc2626"}}>¿Seguro? Esta acción no se puede deshacer</span>
+                  <button onClick={()=>onDelete(order.id)} style={{background:"#dc2626",color:"white",border:"none",borderRadius:7,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Sí, eliminar</button>
+                  <button onClick={()=>setConfirmDel(false)} style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"5px 10px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Cancelar</button>
+                </div>
+              }
+            </div>
+            <div className="admin-actions">
+              {Object.keys(STATUS_LABELS).map(s=>(
+                <button key={s} className="btn-st"
+                  style={order.status===s?{background:STATUS_COLORS[s]?.bg,color:STATUS_COLORS[s]?.color,borderColor:STATUS_COLORS[s]?.color,boxShadow:"0 2px 6px rgba(0,0,0,.1)"}:{}}
+                  onClick={()=>handleStatusClick(s)}>{STATUS_LABELS[s]}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Admin edit zone — visible when order is "En proceso" */}
+        {isAdmin&&isEnProceso&&(
+          <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:14,padding:"14px 16px",marginBottom:"1.4rem"}}>
+            <div style={{fontSize:".72rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".06em",color:"#15803d",marginBottom:10}}>🔄 Gestión del pedido en proceso</div>
+
+            {/* Responsable */}
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>👤 Responsable del pedido</div>
+              {editResp
+                ? <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input value={respDraft} onChange={e=>{setRespDraft(e.target.value);setRespErr("");}}
+                        placeholder="Nombre y apellidos… (obligatorio)"
+                        style={{flex:1,padding:"7px 10px",border:"1.5px solid "+(respErr?"#fca5a5":"#86efac"),borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:700,outline:"none"}}
+                        autoFocus onKeyDown={e=>e.key==="Enter"&&saveResp()}/>
+                      <button onClick={saveResp} style={{background:"#15803d",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
+                      <button onClick={()=>{setEditResp(false);setRespDraft(order.responsable||"");setRespErr("");}} style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                    </div>
+                    {respErr&&<div style={{fontSize:".74rem",color:"#dc2626",fontWeight:700}}>⚠️ {respErr}</div>}
+                  </div>
+                : <div style={{display:"flex",gap:8,alignItems:"center",background:!order.responsable?"#fef2f2":"transparent",border:!order.responsable?"1.5px solid #fecaca":"none",borderRadius:!order.responsable?8:0,padding:!order.responsable?"6px 10px":"0"}}>
+                    <span style={{flex:1,fontWeight:700,fontSize:".88rem",color:order.responsable?"var(--navy)":"#dc2626",fontStyle:order.responsable?"normal":"italic"}}>
+                      {order.responsable||"⚠️ Sin responsable — obligatorio para descargar Excel"}
+                    </span>
+                    <button onClick={()=>{setEditResp(true);setRespDraft(order.responsable||"");}}
+                      style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>✏️ {order.responsable?"Editar":"Asignar"}</button>
+                  </div>
+              }
+            </div>
+
+            {/* Notas */}
+            <div style={{marginBottom:10}}>
+              <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📝 Notas / Observaciones</div>
+              {editNotas
+                ? <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    <textarea value={notasDraft} onChange={e=>setNotasDraft(e.target.value)}
+                      style={{width:"100%",padding:"8px 10px",border:"1.5px solid #86efac",borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:600,outline:"none",resize:"vertical",minHeight:70}}
+                      autoFocus/>
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={saveNotas} style={{background:"#15803d",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
+                      <button onClick={()=>{setEditNotas(false);setNotasDraft(order.notas||"");}} style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",fontSize:".8rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                    </div>
+                  </div>
+                : <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                    <span style={{flex:1,fontWeight:600,fontSize:".85rem",color:order.notas?"var(--navy)":"var(--muted)",fontStyle:order.notas?"normal":"italic",whiteSpace:"pre-wrap"}}>
+                      {order.notas||"Sin notas"}
+                    </span>
+                    <button onClick={()=>{setEditNotas(true);setNotasDraft(order.notas||"");}}
+                      style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0}}>✏️ Editar</button>
+                  </div>
+              }
+            </div>
+
+            {/* Excel + Marcar realizado */}
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"flex-start"}}>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📥 Descargar pedido</div>
+                {!order.responsable&&<div style={{fontSize:".74rem",color:"#dc2626",fontWeight:700,marginBottom:6}}>⚠️ Asigna un <b>responsable</b> antes de descargar.</div>}
+                <button
+                  onClick={()=>{ if(!order.responsable)return; const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===order.proveedor.toLowerCase()); generatePedidoExcel(order.proveedor,[order],dbProv||null); }}
+                  disabled={!order.responsable}
+                  style={{background:order.responsable?"linear-gradient(135deg,#22c55e,#16a34a)":"#e5e7eb",color:order.responsable?"white":"#9ca3af",border:"none",borderRadius:9,padding:"8px 16px",fontSize:".82rem",fontWeight:800,cursor:order.responsable?"pointer":"not-allowed",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:order.responsable?"0 2px 8px rgba(34,197,94,.35)":"none"}}>
+                  📥 Descargar Excel
+                </button>
+              </div>
+              <div style={{flex:1,minWidth:200}}>
+                <div style={{fontSize:".7rem",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📦 Marcar como realizado</div>
+                {!confirmRealizado
+                  ? <button onClick={()=>{setConfirmRealizado(true);setIdinConfirmDraft(order.idinete||"");setIdinConfirmErr("");}}
+                      style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:9,padding:"8px 16px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:"0 2px 8px rgba(194,65,12,.35)"}}>
+                      📦 Pedido realizado →
+                    </button>
+                  : <div style={{background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:10,padding:"10px 12px",display:"flex",flexDirection:"column",gap:7}}>
+                      <div style={{fontSize:".75rem",fontWeight:800,color:"#c2410c"}}>Introduce el código IDinet <span style={{color:"#dc2626"}}>*</span></div>
+                      <div style={{display:"flex",gap:7,alignItems:"center"}}>
+                        <input value={idinConfirmDraft} onChange={e=>{setIdinConfirmDraft(e.target.value);setIdinConfirmErr("");}}
+                          placeholder="P-00000"
+                          style={{flex:1,padding:"6px 9px",border:"1.5px solid "+(idinConfirmErr?"#dc2626":"#fed7aa"),borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".85rem",fontWeight:800,outline:"none",letterSpacing:".05em"}}
+                          autoFocus onKeyDown={e=>e.key==="Enter"&&(()=>{
+                            if(!idinConfirmDraft.trim()){setIdinConfirmErr("Obligatorio");return;}
+                            onStatusChange(order.id,"realizado",{idinete:idinConfirmDraft.trim()});
+                            setConfirmRealizado(false);
+                          })()}
+                        />
+                        <button onClick={()=>{
+                            if(!idinConfirmDraft.trim()){setIdinConfirmErr("Código IDinet obligatorio");return;}
+                            onStatusChange(order.id,"realizado",{idinete:idinConfirmDraft.trim()});
+                            setConfirmRealizado(false);
+                          }}
+                          style={{background:"#c2410c",color:"white",border:"none",borderRadius:7,padding:"6px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>✓ Confirmar</button>
+                        <button onClick={()=>setConfirmRealizado(false)}
+                          style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"6px 9px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                      </div>
+                      {idinConfirmErr&&<div style={{fontSize:".72rem",color:"#dc2626",fontWeight:800}}>⚠️ {idinConfirmErr}</div>}
+                    </div>
+                }
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* IDinet field — realizado / recibido */}
+        {showIdinet&&(
+          <div style={{background:"#fefce8",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 14px",marginBottom:"1.2rem",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <div style={{fontSize:".7rem",fontWeight:800,color:"#a16207",textTransform:"uppercase",letterSpacing:".05em",minWidth:120}}>🏷️ Código IDinet</div>
+            {editIdinet
+              ? <div style={{display:"flex",gap:7,alignItems:"center",flex:1}}>
+                  <input value={idineDraft} onChange={e=>setIdineDraft(e.target.value)}
+                    placeholder="P-00000"
+                    style={{flex:1,padding:"5px 9px",border:"1.5px solid #fde68a",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".88rem",fontWeight:800,outline:"none",letterSpacing:".05em"}}
+                    autoFocus onKeyDown={e=>e.key==="Enter"&&(()=>{onStatusChange(order.id,order.status,{idinete:idineDraft.trim()});setEditIdinet(false);})()}/>
+                  <button onClick={()=>{onStatusChange(order.id,order.status,{idinete:idineDraft.trim()});setEditIdinet(false);}}
+                    style={{background:"#a16207",color:"white",border:"none",borderRadius:7,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>💾 Guardar</button>
+                  <button onClick={()=>setEditIdinet(false)}
+                    style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"5px 8px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                </div>
+              : <div style={{display:"flex",gap:8,alignItems:"center",flex:1}}>
+                  <span style={{fontWeight:900,fontSize:"1rem",color:order.idinete?"#92400e":"var(--muted)",fontStyle:order.idinete?"normal":"italic",letterSpacing:".05em"}}>
+                    {order.idinete||"Sin código IDinet asignado"}
+                  </span>
+                  <button onClick={()=>{setEditIdinet(true);setIdineDraft(order.idinete||"");}}
+                    style={{background:"#fef9c3",color:"#a16207",border:"1.5px solid #fde68a",borderRadius:7,padding:"4px 10px",fontSize:".72rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✏️ {order.idinete?"Editar":"Asignar"}</button>
+                </div>
+            }
+          </div>
+        )}
+
+        {/* Incidencias button — recibido only */}
+        {isAdmin&&isRecibido&&!showIncidencia&&(
+          <div style={{marginBottom:"1rem"}}>
+            <button onClick={()=>{setShowIncidencia(true);setIncidenciaItems({});setIncidenciaNota("");setIncidenciaErr("");}}
+              style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:7,boxShadow:"0 2px 8px rgba(217,119,6,.3)"}}>
+              ⚠️ Abrir incidencia / devolución
+            </button>
+          </div>
+        )}
+        {isAdmin&&isRecibido&&showIncidencia&&(
+          <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:14,padding:"14px 16px",marginBottom:"1.2rem"}}>
+            <div style={{fontWeight:900,fontSize:".9rem",color:"#b45309",marginBottom:8}}>⚠️ Abrir incidencia / devolución</div>
+            <div style={{fontSize:".78rem",color:"#92400e",fontWeight:600,marginBottom:10}}>Selecciona los artículos con incidencia. Si seleccionas todos, el pedido completo volverá a "Pendiente". Si seleccionas solo algunos, se creará un pedido separado en estado "Incidencia".</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
+              {order.products.map((p,i)=>{
+                const sel=!!incidenciaItems[i];
+                return(
+                  <div key={i} className={`incidencia-item-row${sel?" selected":""}`} onClick={()=>setIncidenciaItems(prev=>({...prev,[i]:!prev[i]}))}>
+                    <div style={{width:20,height:20,borderRadius:5,border:"2px solid "+(sel?"#f59e0b":"var(--border)"),background:sel?"#f59e0b":"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0}}>{sel?"✓":""}</div>
+                    <span style={{flex:1,fontWeight:700,fontSize:".85rem",color:"var(--navy)"}}>{p.nombre}</span>
+                    <span style={{fontSize:".75rem",color:"var(--muted)",fontWeight:600}}>{p.unidades}× {eur(p.precio)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{marginBottom:8}}>
+              <div style={{fontSize:".7rem",fontWeight:800,color:"#b45309",textTransform:"uppercase",letterSpacing:".05em",marginBottom:5}}>📝 Descripción de la incidencia <span style={{color:"#dc2626"}}>*</span></div>
+              <textarea value={incidenciaNota} onChange={e=>{setIncidenciaNota(e.target.value);setIncidenciaErr("");}}
+                placeholder="Describe el problema: artículo dañado, cantidad incorrecta, no corresponde al pedido…"
+                style={{width:"100%",padding:"8px 10px",border:"1.5px solid "+(incidenciaErr?"#dc2626":"#fde68a"),borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".84rem",fontWeight:600,outline:"none",resize:"vertical",minHeight:60,background:"white"}}/>
+              {incidenciaErr&&<div style={{fontSize:".72rem",color:"#dc2626",fontWeight:800,marginTop:3}}>⚠️ {incidenciaErr}</div>}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{
+                  const selIdx=Object.entries(incidenciaItems).filter(([,v])=>v).map(([k])=>Number(k));
+                  if(selIdx.length===0){setIncidenciaErr("Selecciona al menos un artículo.");return;}
+                  if(!incidenciaNota.trim()){setIncidenciaErr("La descripción de la incidencia es obligatoria.");return;}
+                  onIncidencia(order,selIdx,incidenciaNota.trim());
+                  setShowIncidencia(false);
+                }}
+                style={{background:"linear-gradient(135deg,#fbbf24,#d97706)",color:"white",border:"none",borderRadius:9,padding:"8px 16px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                ⚠️ Confirmar incidencia
+              </button>
+              <button onClick={()=>setShowIncidencia(false)}
+                style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:9,padding:"8px 14px",fontSize:".82rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Pasar a En proceso — visible for revision/aprobado with responsable */}
+        {isAdmin && ["revision","aprobado"].includes(order.status) && order.responsable && order.proyecto && (
+          <div style={{marginBottom:"1.2rem",display:"flex",gap:10,alignItems:"center",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"10px 14px",flexWrap:"wrap"}}>
+            <span style={{fontSize:".82rem",fontWeight:700,color:"#15803d",flex:1}}>✅ Proyecto y responsable asignados. ¿Listo para pasar a proceso?</span>
+            <button onClick={()=>onStatusChange(order.id,"proceso")}
+              style={{background:"linear-gradient(135deg,#22c55e,#15803d)",color:"white",border:"none",borderRadius:9,padding:"8px 18px",fontSize:".82rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(21,128,61,.35)"}}>
+              🔄 Pasar a "En proceso" →
+            </button>
+          </div>
+        )}
+
+        <div className="detail-section">
+          <h3>Información</h3>
+          <div className="detail-grid">
+            <div className="detail-item"><div className="lbl">Solicitante</div><div className="val">{order.solicitante||order.responsable||"—"}</div></div>
+            {isAdmin&&order.responsable&&<div className="detail-item"><div className="lbl">Responsable pedido</div><div className="val">👤 {order.responsable}</div></div>}
+            <div className="detail-item"><div className="lbl">Proveedor</div><div className="val">{order.proveedor}</div></div>
+            <div className="detail-item"><div className="lbl">Categoría</div><div className="val"><CatTag cat={order.category}/></div></div>
+            {isAdmin&&order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
+          </div>
+        </div>
+        {order.notas&&!isEnProceso&&(
+          <div className="detail-section">
+            <h3>Notas</h3>
+            <div className="notes-box">{order.notas}</div>
+          </div>
+        )}
+        <div className="detail-section">
+          <h3>Artículos · {order.products.length}</h3>
+          <table className="ptable">
+            <thead>
+              <tr>
+                <th>Código</th><th>Producto</th><th>URL</th><th>Uds.</th>
+                {isAdmin&&<th>Precio/ud</th>}
+                {isAdmin&&<th>Subtotal</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {order.products.map((p,i)=>(
+                <tr key={i}>
+                  <td style={{color:"var(--muted)",fontSize:".8rem"}}>{p.codigo||"—"}</td>
+                  <td style={{fontWeight:800}}>{p.nombre}</td>
+                  <td>{p.url?<a href={p.url} target="_blank" rel="noreferrer" style={{color:"var(--accent)",fontSize:".75rem",fontWeight:700,textDecoration:"none"}}>🔗 Ver</a>:"—"}</td>
+                  <td>{p.unidades}</td>
+                  {isAdmin&&<td>{eur(p.precio)}</td>}
+                  {isAdmin&&<td style={{fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>}
+                </tr>
+              ))}
+              {isAdmin&&(
+                <tr style={{background:"var(--bg)"}}>
+                  <td colSpan="5" style={{textAlign:"right",fontWeight:800,color:"var(--muted)",fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em"}}>Total</td>
+                  <td style={{fontWeight:900,color:"var(--accent)",fontSize:"1rem",letterSpacing:"-.3px"}}>{eur(total)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="modal-footer">
+          <button className="btn-sec" onClick={onClose}>Cerrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DASHBOARD ── */
+function ProjectView({valid}){
+  // group by project name (empty = "Sin proyecto")
+  const projectMap = {};
+  valid.forEach(o=>{
+    const key = (o.proyecto||"").trim()||"__none__";
+    if(!projectMap[key]) projectMap[key]=[];
+    projectMap[key].push(o);
+  });
+
+  const projects = Object.entries(projectMap)
+    .map(([name,orders])=>{
+      const total = orders.reduce((s,o)=>s+tot(o.products),0);
+      const catBreak = {};
+      CATS.forEach(c=>{ catBreak[c.key]=orders.filter(o=>o.category===c.key).reduce((s,o)=>s+tot(o.products),0); });
+      return {name, orders, total, catBreak};
+    })
+    .sort((a,b)=>{
+      if(a.name==="__none__") return 1;
+      if(b.name==="__none__") return -1;
+      return b.total-a.total;
+    });
+
+  const grandTotal = projects.reduce((s,p)=>s+p.total,0)||1;
+
+  return(
+    <div>
+      {/* project cards */}
+      <div className="dash-section">
+        <div className="dash-section-title">📁 Resumen por proyecto <span className="year-badge">{projects.filter(p=>p.name!=="__none__").length} proyectos</span></div>
+        {projects.length===0
+          ?<div style={{color:"var(--muted)",fontWeight:600,padding:"1rem 0",fontSize:".9rem"}}>No hay pedidos con proyecto asignado todavía.</div>
+          :<div className="proj-grid">
+            {projects.map(p=>{
+              const catWithVal = CATS.filter(c=>p.catBreak[c.key]>0);
+              const pNone = p.name==="__none__";
+              return(
+                <div key={p.name} className="proj-card">
+                  <div className="proj-card-header">
+                    <div className="proj-name">{pNone?"📦":"📁"} {pNone?"Sin proyecto":p.name}</div>
+                    <div className="proj-total">{eur(p.total)}</div>
+                  </div>
+                  <div className="proj-meta">
+                    <span>🧾 {p.orders.length} pedido{p.orders.length!==1?"s":""}</span>
+                    <span>👤 {[...new Set(p.orders.map(o=>o.solicitante||o.responsable))].slice(0,2).join(", ")}{[...new Set(p.orders.map(o=>o.solicitante||o.responsable))].length>2?" +…":""}</span>
+                  </div>
+                  {/* cat color bar */}
+                  <div className="proj-cat-bar">
+                    {catWithVal.map(c=>(
+                      <div key={c.key} className="proj-cat-seg" style={{width:`${(p.catBreak[c.key]/p.total)*100}%`,background:CAT_COLORS[c.key]}}/>
+                    ))}
+                    {catWithVal.length===0&&<div style={{width:"100%",background:"#e8eaf6",height:"100%"}}/>}
+                  </div>
+                  <div className="proj-cat-list">
+                    {catWithVal.map(c=>{
+                      const cat=CATS.find(x=>x.key===c.key);
+                      return <span key={c.key} className="proj-cat-chip" style={{background:CAT_COLORS[c.key]+"22",color:CAT_COLORS[c.key]}}>{cat.emoji} {eur(p.catBreak[c.key])}</span>;
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        }
+      </div>
+
+      {/* project table */}
+      <div className="dash-section">
+        <div className="dash-section-title">📋 Tabla de proyectos</div>
+        <div style={{overflowX:"auto"}}>
+          <table className="proj-table">
+            <thead>
+              <tr>
+                <th>Proyecto</th>
+                <th>Responsables</th>
+                <th>Pedidos</th>
+                {CATS.map(c=><th key={c.key} style={{textAlign:"right",color:CAT_COLORS[c.key]}}>{c.emoji} {c.label}</th>)}
+                <th style={{textAlign:"right"}}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map(p=>{
+                const pNone=p.name==="__none__";
+                const resps=[...new Set(p.orders.map(o=>o.solicitante||o.responsable))];
+                return(
+                  <tr key={p.name}>
+                    <td style={{fontWeight:pNone?600:800,color:pNone?"var(--muted)":"var(--navy)",fontStyle:pNone?"italic":"normal"}}>
+                      {pNone?"Sin proyecto":p.name}
+                    </td>
+                    <td style={{color:"var(--muted)",fontSize:".78rem"}}>{resps.slice(0,2).join(", ")}{resps.length>2?` +${resps.length-2}`:""}</td>
+                    <td style={{textAlign:"center",color:"var(--muted)"}}>{p.orders.length}</td>
+                    {CATS.map(c=>(
+                      <td key={c.key} style={{textAlign:"right",color:p.catBreak[c.key]>0?CAT_COLORS[c.key]:"#cbd5e1",fontWeight:p.catBreak[c.key]>0?800:500}}>
+                        {p.catBreak[c.key]===0?"—":eur(p.catBreak[c.key])}
+                      </td>
+                    ))}
+                    <td style={{textAlign:"right",fontWeight:900,color:"var(--accent)"}}>{eur(p.total)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>TOTAL</td>
+                <td></td>
+                <td style={{textAlign:"center"}}>{valid.length}</td>
+                {CATS.map(c=>{const cv=projects.reduce((s,p)=>s+p.catBreak[c.key],0);return<td key={c.key} style={{textAlign:"right",color:cv>0?CAT_COLORS[c.key]:"#cbd5e1",fontWeight:cv>0?900:500}}>{cv===0?"—":eur(cv)}</td>;})}
+                <td style={{textAlign:"right",color:"var(--accent)"}}>{eur(projects.reduce((s,p)=>s+p.total,0))}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({orders,proyectos=[],onAsignarProyecto,onConfirmarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,initialDashTab="gasto",proveedores=[]}){
+  const [dashTab,setDashTab]=useState(initialDashTab);
+  const year = new Date().getFullYear();
+  const curMonth = new Date().getMonth();
+
+  const valid = orders.filter(o=>o.status!=="rechazado");
+
+  const totalYear = valid.filter(o=>new Date(o.date).getFullYear()===year).reduce((s,o)=>s+tot(o.products),0);
+  const totalMonth = valid.filter(o=>{const d=new Date(o.date);return d.getFullYear()===year&&d.getMonth()===curMonth;}).reduce((s,o)=>s+tot(o.products),0);
+  const avgMonth = totalYear / 12;
+
+  const monthlyTotals = MONTHS_ES.map((_,mi)=>(
+    valid.filter(o=>{const d=new Date(o.date);return d.getFullYear()===year&&d.getMonth()===mi;})
+      .reduce((s,o)=>s+tot(o.products),0)
+  ));
+  const maxM = Math.max(...monthlyTotals,1);
+
+  const catTotals = {};
+  CATS.forEach(c=>{catTotals[c.key]=valid.filter(o=>new Date(o.date).getFullYear()===year&&o.category===c.key).reduce((s,o)=>s+tot(o.products),0);});
+  const grandTotal = Object.values(catTotals).reduce((s,v)=>s+v,0)||1;
+
+  const monthCatTable = MONTHS_ES.map((_,mi)=>{
+    const row={};
+    CATS.forEach(c=>{
+      row[c.key]=valid.filter(o=>{const d=new Date(o.date);return d.getFullYear()===year&&d.getMonth()===mi&&o.category===c.key;}).reduce((s,o)=>s+tot(o.products),0);
+    });
+    row._total=CATS.reduce((s,c)=>s+row[c.key],0);
+    return row;
+  });
+  const colTotals={};
+  CATS.forEach(c=>{colTotals[c.key]=monthCatTable.reduce((s,r)=>s+r[c.key],0);});
+  colTotals._total=CATS.reduce((s,c)=>s+colTotals[c.key],0);
+
+  return(
+    <div>
+      {/* KPIs always visible */}
+      <div className="dash-section">
+        <div className="dash-section-title">📊 Control de Gasto <span style={{color:"var(--muted)",fontSize:".7rem",marginLeft:4,fontWeight:600}}>Pedidos no rechazados · {year}</span> <span className="year-badge">{year}</span></div>
+        <div className="dash-kpi-grid">
+          <div className="dash-kpi k-total"><div className="kv">{eur(totalYear)}</div><div className="kl">Total {year}</div><div className="ks">{valid.filter(o=>new Date(o.date).getFullYear()===year).length} pedidos</div></div>
+          <div className="dash-kpi k-month"><div className="kv">{eur(totalMonth)}</div><div className="kl">Mes actual</div><div className="ks">{MONTHS_ES[curMonth]} {year}</div></div>
+          <div className="dash-kpi k-avg"><div className="kv">{eur(avgMonth)}</div><div className="kl">Media mensual</div><div className="ks">Promedio anual</div></div>
+        </div>
+      </div>
+
+      {/* sub-tabs */}
+      <div className="dash-tabs">
+        <button className={`dash-tab${dashTab==="gasto"?" act":""}`} onClick={()=>setDashTab("gasto")}>📈 Por categoría</button>
+        <button className={`dash-tab${dashTab==="proyecto"?" act":""}`} onClick={()=>setDashTab("proyecto")}>📁 Por proyecto</button>
+        <button className={`dash-tab${dashTab==="proveedor"?" act":""}`} onClick={()=>setDashTab("proveedor")}>🏪 Por proveedor</button>
+      </div>
+
+      {dashTab==="proveedor" ? (
+        <div>
+          {/* Section 1: Por gestionar — revision/aprobado */}
+          {valid.filter(o=>o.status==="revision"||o.status==="aprobado").length>0&&(
+            <div style={{marginBottom:"1.5rem"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1rem",padding:"10px 14px",background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:12}}>
+                <span style={{fontSize:"1.1rem"}}>📋</span>
+                <div>
+                  <div style={{fontWeight:900,fontSize:".9rem",color:"#1d4ed8"}}>Por gestionar — Pendientes de asignación de proyecto</div>
+                  <div style={{fontSize:".73rem",color:"#3b82f6",fontWeight:600,marginTop:1}}>Asigna un proyecto y luego pulsa "Confirmar y pasar a En proceso". Puedes dividir el pedido entre varios proyectos.</div>
+                </div>
+              </div>
+              <ProveedorView valid={valid.filter(o=>o.status==="revision"||o.status==="aprobado")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onConfirmarProyecto={onConfirmarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} showRealizadoBtn={false} proveedores={proveedores}/>
+            </div>
+          )}
+          {/* Section 2: Realizados/Recibidos — gestión final */}
+          {valid.filter(o=>o.status==="realizado"||o.status==="recibido").length>0&&(
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:"1rem",padding:"10px 14px",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12}}>
+                <span style={{fontSize:"1.1rem"}}>✅</span>
+                <div>
+                  <div style={{fontWeight:900,fontSize:".9rem",color:"#15803d"}}>Pedidos realizados y recibidos</div>
+                  <div style={{fontSize:".73rem",color:"#16a34a",fontWeight:600,marginTop:1}}>Asignación de proyecto, división de bloques y descarga de Excel.</div>
+                </div>
+              </div>
+              <ProveedorView valid={valid.filter(o=>o.status==="realizado"||o.status==="recibido")} proyectos={proyectos} onAsignarProyecto={onAsignarProyecto} onConfirmarProyecto={onConfirmarProyecto} onDividirPedido={onDividirPedido} onUnirBloques={onUnirBloques} onCambiarStatusBloque={onCambiarStatusBloque} isAdmin={isAdmin} proveedores={proveedores}/>
+            </div>
+          )}
+          {valid.filter(o=>["revision","aprobado","realizado","recibido"].includes(o.status)).length===0&&(
+            <div style={{textAlign:"center",padding:"3rem",color:"var(--muted)",fontWeight:600}}>No hay pedidos para gestionar.</div>
+          )}
+        </div>
+      ) : dashTab==="gasto" ? (
+        <div>
+          {/* Category breakdown */}
+          <div className="dash-section">
+            <div className="dash-section-title">🗂️ Por categoría</div>
+            <div className="cat-breakdown">
+              {CATS.map(c=>(
+                <div key={c.key} className={`cat-kpi ck-${c.key}`}>
+                  <div className="ck-label" style={{color:CAT_COLORS[c.key]}}>{c.emoji} {c.label}</div>
+                  <div className="ck-val">{eur(catTotals[c.key])}</div>
+                  <div className="ck-pct">{grandTotal>0?((catTotals[c.key]/grandTotal)*100).toFixed(1):0}%</div>
+                  <div className="ck-bar-wrap"><div className="ck-bar" style={{width:`${grandTotal>0?(catTotals[c.key]/grandTotal)*100:0}%`,background:CAT_COLORS[c.key]}}/></div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="dash-section">
+            <div className="dash-section-title">📈 Gasto mensual {year}</div>
+            <div className="chart-wrap">
+              {monthlyTotals.map((v,i)=>(
+                <div key={i} className="chart-bar-col">
+                  {v>0&&<div className="chart-val-lbl">{v>=1000?(v/1000).toFixed(1)+"k":v.toFixed(0)}</div>}
+                  <div className={`chart-bar${v===0?" empty":""}`} style={{height:`${Math.max((v/maxM)*100,v>0?8:3)}%`,background:i===curMonth?"linear-gradient(180deg,#a78bfa,#6c63ff)":v===0?"#e8eaf6":"linear-gradient(180deg,#93c5fd,#3b82f6)"}}/>
+                  <div className="chart-month-lbl" style={{color:i===curMonth?"var(--accent)":""}}>{MONTHS_ES[i]}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Monthly table */}
+          <div className="dash-section">
+            <div className="dash-section-title">📋 Desglose mensual por categoría</div>
+            <div style={{overflowX:"auto"}}>
+              <table className="month-table">
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    {CATS.map(c=><th key={c.key} style={{color:CAT_COLORS[c.key]}}>{c.emoji} {c.label}</th>)}
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthCatTable.map((row,mi)=>(
+                    <tr key={mi} className={mi===curMonth?"cur":""}>
+                      <td>{MONTHS_ES[mi]}</td>
+                      {CATS.map(c=><td key={c.key} className={row[c.key]===0?"zero":""}>{row[c.key]===0?"—":eur(row[c.key])}</td>)}
+                      <td style={{color:row._total>0?"var(--accent)":"",fontWeight:row._total>0?900:600}} className={row._total===0?"zero":""}>{row._total===0?"—":eur(row._total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td style={{color:"var(--navy)"}}>TOTAL</td>
+                    {CATS.map(c=><td key={c.key} style={{color:CAT_COLORS[c.key]}}>{colTotals[c.key]===0?"—":eur(colTotals[c.key])}</td>)}
+                    <td style={{color:"var(--accent)"}}>{colTotals._total===0?"—":eur(colTotals._total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <ProjectView valid={valid}/>
+      )}
+    </div>
+  );
+}
+
+/* ── SPLIT ORDER MODAL ── */
+function SplitOrderModal({orders, proveedorName, proyectos, onClose, onSplit}){
+  // Build a flat list of items: {orderId, productIndex, product, order}
+  const allItems = orders.flatMap(o=>
+    o.products.map((p,pi)=>({key:o.id+"-"+pi, orderId:o.id, pi, product:p, order:o}))
+  );
+
+  // assignment: null = unassigned, "A" or "B"
+  const [assignment, setAssignment] = useState({});
+  const [projA, setProjA] = useState(orders[0]?.proyecto||"");
+  const [projB, setProjB] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key)=>{
+    setAssignment(prev=>{
+      const cur = prev[key];
+      if(!cur) return {...prev,[key]:"A"};
+      if(cur==="A") return {...prev,[key]:"B"};
+      return {...prev,[key]:null};
+    });
+  };
+
+  const itemsA = allItems.filter(i=>assignment[i.key]==="A");
+  const itemsB = allItems.filter(i=>assignment[i.key]==="B");
+  const unassigned = allItems.filter(i=>!assignment[i.key]);
+
+  const totalA = itemsA.reduce((s,i)=>s+i.product.unidades*i.product.precio,0);
+  const totalB = itemsB.reduce((s,i)=>s+i.product.unidades*i.product.precio,0);
+
+  const canSave = itemsA.length>0 && itemsB.length>0;
+
+  const handleSave = async()=>{
+    if(!canSave) return;
+    setSaving(true);
+    await onSplit({orders, itemsA, itemsB, projA, projB, unassigned, assignment, allItems});
+    setSaving(false);
+    onClose();
+  };
+
+  const renderItem = (item)=>{
+    const asgn = assignment[item.key];
+    return(
+      <div key={item.key}
+        className={`split-item-row${asgn==="A"?" in-a":asgn==="B"?" in-b":""}`}
+        onClick={()=>toggle(item.key)}
+        title="Haz clic para mover: Sin asignar → Pedido A → Pedido B → Sin asignar"
+      >
+        <span className="split-item-arrow">
+          {!asgn?"○":asgn==="A"?"🔵":"🟠"}
+        </span>
+        <span className="split-item-name">{item.product.nombre}</span>
+        <span className="split-item-meta">{item.product.unidades}× {eur(item.product.precio)}</span>
+        <span className="split-item-meta" style={{color:"var(--accent)",fontWeight:800,minWidth:60,textAlign:"right"}}>{eur(item.product.unidades*item.product.precio)}</span>
+      </div>
+    );
+  };
+
+  return(
+    <div className="split-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="split-modal">
+        <div className="split-head">
+          <h3>✂️ Dividir pedido — 🏪 {proveedorName}</h3>
+          <p>Haz clic en cada artículo para asignarlo al Pedido A (🔵) o Pedido B (🟠). Los artículos sin asignar se quedarán en el pedido A.</p>
+        </div>
+        <div className="split-body">
+          {/* Column A */}
+          <div className="split-col">
+            <div className="split-col-head split-col-a">
+              <div className="split-col-title">🔵 Pedido A</div>
+              <div className="split-col-proj">
+                <select value={projA} onChange={e=>setProjA(e.target.value)}>
+                  <option value="">— Sin proyecto —</option>
+                  {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="split-items">
+              {itemsA.length===0 && unassigned.length===0
+                ? <div className="split-empty">Sin artículos</div>
+                : <>
+                    {itemsA.map(renderItem)}
+                    {unassigned.map(i=>(
+                      <div key={i.key}
+                        className="split-item-row"
+                        onClick={()=>toggle(i.key)}
+                        style={{opacity:.55}}
+                        title="Sin asignar — irá al Pedido A por defecto"
+                      >
+                        <span className="split-item-arrow">○</span>
+                        <span className="split-item-name">{i.product.nombre}</span>
+                        <span className="split-item-meta">{i.product.unidades}× {eur(i.product.precio)}</span>
+                        <span className="split-item-meta" style={{color:"var(--muted)",minWidth:60,textAlign:"right"}}>{eur(i.product.unidades*i.product.precio)}</span>
+                      </div>
+                    ))}
+                  </>
+              }
+            </div>
+            <div className="split-col-total">
+              Total: {eur(totalA + unassigned.reduce((s,i)=>s+i.product.unidades*i.product.precio,0))}
+            </div>
+          </div>
+
+          {/* Column B */}
+          <div className="split-col">
+            <div className="split-col-head split-col-b">
+              <div className="split-col-title">🟠 Pedido B <span style={{fontSize:".7rem",fontWeight:600,color:"var(--muted)"}}>— nuevo</span></div>
+              <div className="split-col-proj">
+                <select value={projB} onChange={e=>setProjB(e.target.value)}>
+                  <option value="">— Sin proyecto —</option>
+                  {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="split-items">
+              {itemsB.length===0
+                ? <div className="split-empty">Haz clic en artículos para añadirlos aquí</div>
+                : itemsB.map(renderItem)
+              }
+            </div>
+            <div className="split-col-total">
+              {itemsB.length>0 ? "Total: "+eur(totalB) : ""}
+            </div>
+          </div>
+        </div>
+
+        <div className="split-foot">
+          <div className="split-foot-hint">
+            {!canSave
+              ? "⚠️ Asigna al menos 1 artículo al Pedido B para poder dividir"
+              : `✅ Pedido A: ${itemsA.length+unassigned.length} art. · Pedido B: ${itemsB.length} art.`}
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button className="btn-sec" onClick={onClose}>Cancelar</button>
+            <button
+              className="btn-primary"
+              style={{opacity:canSave?1:.5,cursor:canSave?"pointer":"not-allowed",background:"linear-gradient(135deg,#f97316,#ea580c)"}}
+              onClick={handleSave}
+              disabled={!canSave||saving}
+            >{saving?"Guardando…":"✂️ Dividir pedido"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── MERGE BLOCKS MODAL ── */
+function MergeBlocksModal({proveedorName, bloques, onClose, onMerge}){
+  // bloques: array of pvList entries {key, bloqueLabel, orders, total}
+  const [selected, setSelected] = useState(
+    // pre-select all by default
+    Object.fromEntries(bloques.map(b=>[b.key, true]))
+  );
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key) => setSelected(prev=>({...prev,[key]:!prev[key]}));
+  const selectedBloques = bloques.filter(b=>selected[b.key]);
+  const canMerge = selectedBloques.length >= 2;
+  const totalSelected = selectedBloques.reduce((s,b)=>s+b.total,0);
+  const totalItems = selectedBloques.reduce((s,b)=>s+b.orders.reduce((ss,o)=>ss+o.products.length,0),0);
+
+  const handleMerge = async()=>{
+    if(!canMerge) return;
+    setSaving(true);
+    await onMerge(proveedorName, selectedBloques.flatMap(b=>b.orders));
+    setSaving(false);
+    onClose();
+  };
+
+  return(
+    <div className="split-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="split-modal" style={{maxWidth:480}}>
+        <div className="split-head">
+          <h3>🔗 Unir bloques — 🏪 {proveedorName}</h3>
+          <p>Selecciona los bloques que quieres fusionar en uno solo. Los no seleccionados quedan intactos.</p>
+        </div>
+        <div style={{padding:"1rem 1.5rem",display:"flex",flexDirection:"column",gap:8}}>
+          {bloques.map(b=>{
+            const isSel = selected[b.key];
+            const nItems = b.orders.reduce((s,o)=>s+o.products.length,0);
+            const proyecto = b.orders[0]?.proyecto;
+            return(
+              <div key={b.key}
+                onClick={()=>toggle(b.key)}
+                style={{display:"flex",alignItems:"center",gap:12,padding:".75rem 1rem",borderRadius:12,border:`1.5px solid ${isSel?"#f59e0b":"var(--border)"}`,background:isSel?"#fffbeb":"white",cursor:"pointer",transition:"all .13s",userSelect:"none"}}
+              >
+                <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${isSel?"#f59e0b":"var(--border)"}`,background:isSel?"#f59e0b":"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:".8rem",flexShrink:0,transition:"all .13s"}}>
+                  {isSel&&"✓"}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:800,fontSize:".88rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:6}}>
+                    ✂️ {b.bloqueLabel}
+                    {proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",fontSize:".68rem",fontWeight:800,padding:"2px 8px",borderRadius:20}}>📁 {proyecto}</span>}
+                  </div>
+                  <div style={{fontSize:".72rem",color:"var(--muted)",fontWeight:600,marginTop:2}}>
+                    {nItems} artículo{nItems!==1?"s":""}
+                    {b.orders[0]?.responsable && " · "+b.orders[0].responsable}
+                  </div>
+                </div>
+                <div style={{fontWeight:900,fontSize:".9rem",color:isSel?"#d97706":"var(--muted)",letterSpacing:"-.3px"}}>
+                  {eur(b.total)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{padding:".75rem 1.5rem",background:"var(--bg)",borderTop:"1.5px solid var(--border)",borderBottom:"1.5px solid var(--border)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:".78rem",fontWeight:700,color:"var(--muted)"}}>
+            {canMerge
+              ? `✅ ${selectedBloques.length} bloques · ${totalItems} artículos · ${eur(totalSelected)}`
+              : "⚠️ Selecciona al menos 2 bloques"}
+          </span>
+          {canMerge&&<span style={{fontSize:".72rem",color:"#92400e",fontWeight:700,background:"#fef9c3",padding:"3px 9px",borderRadius:20,border:"1px solid #fde68a"}}>⚠️ Se quitará el proyecto asignado</span>}
+        </div>
+        <div className="split-foot">
+          <button className="btn-sec" onClick={onClose}>Cancelar</button>
+          <button
+            className="btn-primary"
+            style={{opacity:canMerge?1:.5,cursor:canMerge?"pointer":"not-allowed",background:"linear-gradient(135deg,#fbbf24,#f59e0b)",boxShadow:"0 2px 8px rgba(245,158,11,.4)"}}
+            onClick={handleMerge}
+            disabled={!canMerge||saving}
+          >{saving?"Fusionando…":"🔗 Unir seleccionados"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PROVEEDOR VIEW ── */
+function ProveedorView({valid,proyectos=[],onAsignarProyecto,onConfirmarProyecto,onDividirPedido,onUnirBloques,onCambiarStatusBloque,isAdmin,showRealizadoBtn=true,proveedores=[]}){
+  const [splitProv, setSplitProv] = useState(null);
+  const [mergeProv, setMergeProv] = useState(null);
+  const [realizadoProv, setRealizadoProv] = useState(null); // {key, orders} — mini-form
+  const [realizadoResp, setRealizadoResp] = useState(""); // responsable input
+  // group by bloque (if set) or proveedor
+  const provMap={};
+  valid.forEach(o=>{
+    const k = o.bloque || o.proveedor || "Sin proveedor";
+    if(!provMap[k]) provMap[k]=[];
+    provMap[k].push(o);
+  });
+  const pvList=Object.entries(provMap)
+    .map(([key,orders])=>({
+      key,
+      name: orders[0].proveedor || key,
+      bloque: orders[0].bloque || null,
+      bloqueLabel: orders[0].bloque
+        ? orders[0].bloque.replace(orders[0].proveedor,"").replace(/^ · /,"")
+        : null,
+      orders,
+      total:orders.reduce((s,o)=>s+tot(o.products),0)
+    }))
+    .sort((a,b)=>{
+      if(a.name!==b.name) return b.total-a.total;
+      return (a.bloqueLabel||"").localeCompare(b.bloqueLabel||"");
+    });
+
+  // Which proveedores have 2+ bloques?
+  const bloqueCount={};
+  pvList.forEach(pv=>{ if(pv.bloque) bloqueCount[pv.name]=(bloqueCount[pv.name]||0)+1; });
+
+  // All pvList entries for a given proveedor (for the merge modal)
+  const bloquesDeProveedor=(name)=>pvList.filter(p=>p.name===name && p.bloque);
+
+  if(pvList.length===0) return(
+    <div className="dash-section"><div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600}}>No hay pedidos todavía.</div></div>
+  );
+
+  return(
+    <div>
+      {pvList.map(pv=>(
+        <div key={pv.key} className="dash-section" style={{marginBottom:"1rem"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1rem",flexWrap:"wrap",gap:12}}>
+            <div>
+              <div style={{fontWeight:900,fontSize:"1.05rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                🏪 {pv.name}
+                {pv.bloqueLabel&&(
+                  <span style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",fontSize:".72rem",fontWeight:800,padding:"3px 10px",borderRadius:20,letterSpacing:".02em"}}>
+                    ✂️ {pv.bloqueLabel}
+                  </span>
+                )}
+              </div>
+              <div style={{fontSize:".75rem",color:"var(--muted)",fontWeight:600,marginTop:2}}>
+                {pv.orders.length} solicitud{pv.orders.length!==1?"es":""} · {[...new Set(pv.orders.map(o=>o.solicitante||o.responsable))].length} solicitante{[...new Set(pv.orders.map(o=>o.solicitante||o.responsable))].length!==1?"s":""}
+                {pv.orders[0]?.responsable && pv.orders.some(o=>LOCKED_STATUSES.includes(o.status)) && (
+                  <span style={{marginLeft:8,color:"var(--navy)",fontWeight:700}}>· 👤 Resp: <b>{pv.orders[0].responsable}</b></span>
+                )}
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+              <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
+                <div style={{fontSize:".68rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"var(--accent)"}}>📁 Asignar proyecto al pedido</div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  {(()=>{
+                    const bloqueado = !isAdmin && pv.orders.some(o=>LOCKED_STATUSES.includes(o.status));
+                    return bloqueado ? (
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{background:"#fef9c3",color:"#92400e",border:"1.5px solid #fde68a",borderRadius:10,padding:"6px 14px",fontSize:".82rem",fontWeight:800,display:"flex",alignItems:"center",gap:6}}>
+                          🔒 {pv.orders[0]?.proyecto||"Sin proyecto"}
+                        </span>
+                      </div>
+                    ) : (
+                      <select
+                        className="form-input"
+                        style={{minWidth:200,fontSize:".85rem",padding:"7px 30px 7px 11px"}}
+                        value={pv.orders[0]?.proyecto||""}
+                        onChange={e=>{ pv.orders.forEach(o=>onAsignarProyecto(o.id,e.target.value)); }}
+                      >
+                        <option value="">— Sin proyecto —</option>
+                        {proyectos.filter(p=>p.active).map(p=><option key={p.id} value={p.name}>{p.name}{p.desc?" · "+p.desc:""}</option>)}
+                      </select>
+                    );
+                  })()}
+                  {!LOCKED_STATUSES.includes(pv.orders[0]?.status)&&pv.orders[0]?.proyecto&&<span style={{background:"#f3f0ff",color:"var(--accent)",padding:"4px 12px",borderRadius:20,fontSize:".75rem",fontWeight:800,whiteSpace:"nowrap"}}>📁 {pv.orders[0].proyecto}</span>}
+                </div>
+                {/* Confirm button: show when project is assigned but status is not yet "proceso" */}
+                {pv.orders[0]?.proyecto && pv.orders.some(o=>!LOCKED_STATUSES.includes(o.status) && o.status!=="proceso") && onConfirmarProyecto && (
+                  <button
+                    onClick={()=>onConfirmarProyecto(pv.orders.map(o=>o.id))}
+                    style={{background:"linear-gradient(135deg,#22c55e,#15803d)",color:"white",border:"none",borderRadius:9,padding:"7px 16px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(21,128,61,.35)",whiteSpace:"nowrap",marginTop:2}}
+                  >✅ Confirmar y pasar a "En proceso"</button>
+                )}
+                {pv.orders[0]?.proyecto && pv.orders.every(o=>o.status==="proceso") && <div style={{fontSize:".68rem",color:"#15803d",fontWeight:700}}>✅ Pedidos en proceso</div>}
+              </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                <div style={{fontWeight:900,fontSize:"1.3rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
+                <div style={{display:"flex",gap:7,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                  {pv.bloque && bloqueCount[pv.name]>=2 && (
+                    <button onClick={()=>setMergeProv(pv.name)}
+                      style={{background:"linear-gradient(135deg,#fbbf24,#f59e0b)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(245,158,11,.35)",whiteSpace:"nowrap"}}>
+                      🔗 Unir bloques
+                    </button>
+                  )}
+                  {pv.orders.reduce((s,o)=>s+o.products.length,0)>1&&(
+                    <button
+                      onClick={()=>setSplitProv({name:pv.name, bloque:pv.bloqueLabel, orders:pv.orders})}
+                      style={{background:"linear-gradient(135deg,#fb923c,#f97316)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(249,115,22,.35)",whiteSpace:"nowrap"}}
+                    >✂️ Dividir</button>
+                  )}
+                  {/* Marcar realizado — solo en sección realizado/recibido */}
+                  {showRealizadoBtn && (pv.orders.some(o=>o.status!=="realizado"&&o.status!=="recibido") ? (
+                    realizadoProv?.key===pv.key
+                      ? <div style={{display:"flex",alignItems:"center",gap:6,background:"#fff7ed",border:"1.5px solid #fed7aa",borderRadius:9,padding:"6px 10px",flexWrap:"wrap"}}>
+                          <span style={{fontSize:".72rem",fontWeight:700,color:"#c2410c",whiteSpace:"nowrap"}}>👤 Responsable del pedido:</span>
+                          <input
+                            autoFocus
+                            value={realizadoResp}
+                            onChange={e=>setRealizadoResp(e.target.value)}
+                            placeholder="Nombre y apellidos…"
+                            style={{padding:"4px 9px",border:"1.5px solid #fed7aa",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".78rem",fontWeight:700,outline:"none",minWidth:160}}
+                          />
+                          <button
+                            onClick={()=>{ if(!realizadoResp.trim()) return; onCambiarStatusBloque(realizadoProv.orders,"realizado",realizadoResp.trim()); setRealizadoProv(null); setRealizadoResp(""); }}
+                            disabled={!realizadoResp.trim()}
+                            style={{background:realizadoResp.trim()?"#c2410c":"#e5e7eb",color:"white",border:"none",borderRadius:7,padding:"4px 10px",fontSize:".72rem",fontWeight:800,cursor:realizadoResp.trim()?"pointer":"default",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>📦 Confirmar</button>
+                          <button onClick={()=>{ setRealizadoProv(null); setRealizadoResp(""); }}
+                            style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"4px 8px",fontSize:".72rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                        </div>
+                      : <button onClick={()=>{ setRealizadoProv({key:pv.key, orders:pv.orders}); setRealizadoResp(""); }}
+                          style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(194,65,12,.35)",whiteSpace:"nowrap"}}>
+                          📦 Pedido realizado
+                        </button>
+                  ) : pv.orders.every(o=>o.status==="recibido") ? (
+                    <span style={{background:"#dcfce7",color:"#15803d",border:"1.5px solid #86efac",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>
+                      ✅ Recibido
+                    </span>
+                  ) : (
+                    <span style={{background:"#fff7ed",color:"#c2410c",border:"1.5px solid #fed7aa",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap"}}>
+                      📦 Realizado
+                    </span>
+                  ))}
+                  <button
+                    onClick={()=>{ const dbProv=proveedores.find(p=>p.nombre.toLowerCase()===pv.name.toLowerCase()); generatePedidoExcel(pv.name, pv.orders, dbProv||null); }}
+                    style={{background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(34,197,94,.35)",whiteSpace:"nowrap"}}
+                  >📥 Descargar Excel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <table className="ptable">
+            <thead>
+              <tr>
+                <th>Artículo</th>
+                <th>Código</th>
+                <th>URL</th>
+                <th>Solicitante</th>
+                <th>Uso / Notas</th>
+                <th style={{textAlign:"right"}}>Uds.</th>
+                <th style={{textAlign:"right"}}>Precio/ud</th>
+                <th style={{textAlign:"right"}}>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pv.orders.flatMap((o,oi)=>
+                o.products.map((p,pi)=>(
+                  <tr key={oi+"-"+pi}>
+                    <td style={{fontWeight:800}}>{p.nombre}</td>
+                    <td style={{color:"var(--muted)",fontSize:".78rem"}}>{p.codigo||"—"}</td>
+                    <td>{p.url?<a href={p.url} target="_blank" rel="noreferrer" style={{color:"var(--accent)",fontSize:".75rem",fontWeight:700,textDecoration:"none"}}>🔗 Ver</a>:"—"}</td>
+                    <td style={{fontSize:".8rem",color:"var(--muted)",fontWeight:700}}>{o.solicitante||o.responsable}</td>
+                    <td style={{fontSize:".78rem",color:"var(--muted)",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={o.notas||""}>{o.notas||"—"}</td>
+                    <td style={{textAlign:"right"}}>{p.unidades}</td>
+                    <td style={{textAlign:"right"}}>{eur(p.precio)}</td>
+                    <td style={{textAlign:"right",fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan="7" style={{textAlign:"right",fontWeight:800,fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em",color:"var(--muted)"}}>Total {pv.bloqueLabel ? pv.name+" · "+pv.bloqueLabel : pv.name}</td>
+                <td style={{textAlign:"right",fontWeight:900,color:"var(--accent)",fontSize:"1rem"}}>{eur(pv.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      ))}
+      {splitProv&&(
+        <SplitOrderModal
+          orders={splitProv.orders}
+          proveedorName={splitProv.bloque ? splitProv.name+" · "+splitProv.bloque : splitProv.name}
+          proyectos={proyectos}
+          onClose={()=>setSplitProv(null)}
+          onSplit={onDividirPedido}
+        />
+      )}
+      {mergeProv&&(
+        <MergeBlocksModal
+          proveedorName={mergeProv}
+          bloques={bloquesDeProveedor(mergeProv)}
+          onClose={()=>setMergeProv(null)}
+          onMerge={onUnirBloques}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── CATALOG MODAL ── */
+function CatalogModal({catalogo,onClose,onAdd}){
+  const [search,setSearch]=useState("");
+  const [selected,setSelected]=useState({});
+  const filtered=catalogo.filter(p=>{ const s=search.toLowerCase(); return !s||p.nombre.toLowerCase().includes(s)||(p.codigo||"").toLowerCase().includes(s)||(p.proveedor||"").toLowerCase().includes(s); });
+  const toggle=p=>setSelected(prev=>prev[p.id]?{...prev,[p.id]:undefined}:{...prev,[p.id]:{...p,unidades:1}});
+  const setUds=(id,v)=>setSelected(prev=>({...prev,[id]:{...prev[id],unidades:v}}));
+  const selList=Object.values(selected).filter(Boolean);
+  const confirmAdd=()=>{ if(selList.length===0) return; onAdd(selList.map(p=>({codigo:p.codigo||"",nombre:p.nombre||"",url:p.url||"",unidades:Number(p.unidades)||1,precio:Number(p.precio)||0}))); onClose(); };
+  return(
+    <div className="catalog-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="catalog-modal">
+        <div className="catalog-head">
+          <h3>📦 Catálogo de productos frecuentes</h3>
+          <div className="catalog-search">
+            <span className="catalog-search-icon">🔍</span>
+            <input placeholder="Buscar por nombre, código, proveedor…" value={search} onChange={e=>setSearch(e.target.value)} autoFocus/>
+          </div>
+        </div>
+        <div className="catalog-body">
+          {catalogo.length===0
+            ?<div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600}}>No hay productos en el catálogo todavía.</div>
+            :filtered.length===0
+            ?<div style={{textAlign:"center",padding:"1.5rem",color:"var(--muted)",fontWeight:600}}>Sin resultados para "{search}"</div>
+            :filtered.map(p=>(
+              <div key={p.id} className={`catalog-item${selected[p.id]?" selected":""}`} onClick={()=>toggle(p)}>
+                <div className="catalog-item-info">
+                  <div className="catalog-item-name">{p.nombre}</div>
+                  <div className="catalog-item-meta">
+                    {p.codigo&&<span>📋 {p.codigo}</span>}
+                    {p.proveedor&&<span>🏪 {p.proveedor}</span>}
+                    {p.categoria&&<CatTag cat={p.categoria}/>}
+                    {p.precio>0&&<span style={{color:"var(--accent)",fontWeight:800}}>{eur(p.precio)}</span>}
+                    {p.url&&<a href={p.url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{color:"var(--accent)"}}>🔗 Ver</a>}
+                  </div>
+                </div>
+                {selected[p.id]&&(
+                  <div onClick={e=>e.stopPropagation()} style={{display:"flex",alignItems:"center",gap:6}}>
+                    <label style={{fontSize:".72rem",fontWeight:700,color:"var(--muted)"}}>Uds.</label>
+                    <input type="number" min="1" value={selected[p.id].unidades} onChange={e=>setUds(p.id,e.target.value)} style={{width:52,padding:"4px 6px",border:"1.5px solid var(--accent)",borderRadius:7,fontFamily:"'Nunito',sans-serif",fontSize:".82rem",fontWeight:700,textAlign:"center"}}/>
+                  </div>
+                )}
+                <div className="catalog-item-check">{selected[p.id]?"✓":""}</div>
+              </div>
+            ))
+          }
+        </div>
+        <div className="catalog-foot">
+          <div className="catalog-selected-count">{selList.length>0?selList.length+" producto"+(selList.length>1?"s":"")+" seleccionado"+(selList.length>1?"s":""):""}</div>
+          <div style={{display:"flex",gap:8}}>
+            <button className="btn-sec" onClick={onClose}>Cancelar</button>
+            <button className="btn-primary" onClick={confirmAdd} style={{opacity:selList.length===0?.5:1}}>Añadir {selList.length>0?"("+selList.length+")":""}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── CATALOG ADMIN ── */
+function CatalogAdmin({catalogo,setCatalogo}){
+  const emptyForm={nombre:"",codigo:"",proveedor:"",categoria:"",url:"",precio:""};
+  const [showModal,setShowModal]=useState(false);
+  const [editing,setEditing]=useState(null);
+  const [form,setForm]=useState(emptyForm);
+  const [err,setErr]=useState("");
+  const [fetching,setFetching]=useState(false);
+  const [search,setSearch]=useState("");
+  const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const openNew=()=>{ setForm(emptyForm); setEditing(null); setErr(""); setShowModal(true); };
+  const openEdit=p=>{ setForm({nombre:p.nombre||"",codigo:p.codigo||"",proveedor:p.proveedor||"",categoria:p.categoria||"",url:p.url||"",precio:p.precio||""}); setEditing(p.id); setErr(""); setShowModal(true); };
+  const fetchPrice=async()=>{
+    if(!form.url.trim()) return setErr("Añade primero la URL del producto.");
+    setFetching(true); setErr("");
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,system:"Extrae datos de productos cientificos. Responde SOLO JSON sin markdown: {\"precio\":numero_o_null,\"nombre\":\"string\",\"codigo\":\"string\"}",messages:[{role:"user",content:"Extrae precio unitario, nombre y codigo de referencia de este producto: "+form.url}]})});
+      const data=await res.json();
+      const text=data.content?.[0]?.text||"";
+      const parsed=JSON.parse(text.replace(/```json|```/g,"").trim());
+      if(parsed.precio) sf("precio",String(parsed.precio));
+      if(parsed.nombre&&!form.nombre) sf("nombre",parsed.nombre);
+      if(parsed.codigo&&!form.codigo) sf("codigo",parsed.codigo);
+      if(!parsed.precio) setErr("No se pudo extraer el precio. Introdúcelo manualmente.");
+    }catch(e){ setErr("Error al obtener precio. Introdúcelo manualmente."); }
+    setFetching(false);
+  };
+  const save=async()=>{
+    if(!form.nombre.trim()) return setErr("El nombre es obligatorio.");
+    const fb=getFB();
+    if(editing===null){
+      const newP={...form,nombre:form.nombre.trim(),precio:Number(form.precio)||0,id:Date.now()};
+      if(fb){ await fb.addDoc(fb.collection(fb.db,"catalogo"),newP); } else { setCatalogo(ps=>[...ps,newP]); }
+    } else {
+      const p=catalogo.find(x=>x.id===editing);
+      const upd={...p,...form,nombre:form.nombre.trim(),precio:Number(form.precio)||0};
+      if(fb&&p?._docId){ await fb.updateDoc(fb.doc(fb.db,"catalogo",p._docId),upd); } else { setCatalogo(ps=>ps.map(x=>x.id===editing?upd:x)); }
+    }
+    setShowModal(false);
+  };
+  const del=async p=>{ if(!confirm("Eliminar "+p.nombre+"?")) return; const fb=getFB(); if(fb&&p._docId){ await fb.deleteDoc(fb.doc(fb.db,"catalogo",p._docId)); } else { setCatalogo(ps=>ps.filter(x=>x.id!==p.id)); } };
+  const filtered=catalogo.filter(p=>!search||p.nombre.toLowerCase().includes(search.toLowerCase())||(p.proveedor||"").toLowerCase().includes(search.toLowerCase()));
+  return(
+    <div>
+      <div className="pm-header">
+        <div>
+          <div className="pm-title">📦 Catálogo de productos frecuentes</div>
+          <div className="pm-subtitle">Aparecen como sugerencias al escribir en el formulario, o se añaden directamente desde el catálogo</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span style={{background:"#fff8ed",color:"#ea580c",padding:"4px 12px",borderRadius:20,fontSize:".8rem",fontWeight:700}}>{catalogo.length} productos</span>
+          <button className="btn-primary" onClick={openNew} style={{fontSize:".82rem",padding:"8px 16px"}}>+ Añadir producto</button>
+        </div>
+      </div>
+      {catalogo.length>0&&<div style={{position:"relative",marginBottom:"1rem"}}><span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)"}}>🔍</span><input className="form-input" style={{paddingLeft:34}} placeholder="Buscar en catálogo…" value={search} onChange={e=>setSearch(e.target.value)}/></div>}
+      {catalogo.length===0
+        ?<div className="pm-empty">📦 No hay productos todavía. Añade el primero.</div>
+        :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))",gap:12}}>
+          {filtered.map(p=>(
+            <div key={p.id} className="pdb-card">
+              <div className="pdb-card-head">
+                <div className="pdb-card-name" style={{fontSize:".9rem"}}>{p.nombre}</div>
+                {p.precio>0&&<span style={{fontWeight:900,color:"var(--accent)",fontSize:".9rem"}}>{eur(p.precio)}</span>}
+              </div>
+              <div className="pdb-card-body">
+                {p.codigo&&<div className="pdb-field"><span className="pdb-field-lbl">Código</span><span className="pdb-field-val">{p.codigo}</span></div>}
+                {p.proveedor&&<div className="pdb-field"><span className="pdb-field-lbl">Proveedor</span><span className="pdb-field-val">{p.proveedor}</span></div>}
+                {p.categoria&&<div className="pdb-field"><span className="pdb-field-lbl">Cat.</span><span className="pdb-field-val"><CatTag cat={p.categoria}/></span></div>}
+                {p.url&&<div className="pdb-field"><span className="pdb-field-lbl">URL</span><span className="pdb-field-val"><a href={p.url} target="_blank" rel="noreferrer">🔗 Ver</a></span></div>}
+              </div>
+              <div className="pdb-card-actions"><button className="pdb-btn-edit" onClick={()=>openEdit(p)}>✏️ Editar</button><button className="pdb-btn-del" onClick={()=>del(p)}>🗑️</button></div>
+            </div>
+          ))}
+        </div>
+      }
+      {showModal&&(
+        <div className="pdb-modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
+          <div className="pdb-modal">
+            <h3>{editing===null?"➕ Nuevo producto":"✏️ Editar producto"}</h3>
+            {err&&<div className="err-msg" style={{margin:"8px 0"}}>⚠️ {err}</div>}
+            <div className="pdb-form-grid" style={{marginTop:12}}>
+              <div className="form-group full" style={{marginBottom:0}}><label className="form-label">Nombre <span className="req">*</span></label><input className="form-input" placeholder="Ej: Etanol absoluto 99.8%" value={form.nombre} onChange={e=>sf("nombre",e.target.value)}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Código</label><input className="form-input" placeholder="REF-001" value={form.codigo} onChange={e=>sf("codigo",e.target.value)}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Proveedor habitual</label><input className="form-input" placeholder="Sigma-Aldrich, VWR…" value={form.proveedor} onChange={e=>sf("proveedor",e.target.value)}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Categoría</label><select className="form-input" value={form.categoria} onChange={e=>sf("categoria",e.target.value)}><option value="">— Sin categoría —</option>{CATS.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}</select></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Precio habitual (€)</label><input className="form-input" type="number" min="0" step="0.01" placeholder="0.00" value={form.precio} onChange={e=>sf("precio",e.target.value)}/></div>
+              <div className="form-group full" style={{marginBottom:0}}>
+                <label className="form-label">URL <span className="opt">(pega la URL y pulsa "🤖 Auto-precio" para obtener el precio con IA)</span></label>
+                <div style={{display:"flex",gap:6}}>
+                  <input className="form-input" placeholder="https://www.sigmaaldrich.com/…" value={form.url} onChange={e=>sf("url",e.target.value)} style={{flex:1}}/>
+                  <button className={"fetch-btn"+(fetching?" loading":"")} onClick={fetchPrice} disabled={fetching}>{fetching?"⏳ Buscando…":"🤖 Auto-precio"}</button>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{marginTop:"1.25rem"}}>
+              <button className="btn-sec" onClick={()=>setShowModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={save}>💾 Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── PROJECT MANAGER PANEL ── */
+function ProjectManager({proyectos,setProyectos}){
+  const getFBl=getFB;
+  const [name,setName]=useState("");
+  const [desc,setDesc]=useState("");
+  const [errP,setErrP]=useState("");
+
+  const addProj=async()=>{
+    if(!name.trim()) return setErrP("El nombre del proyecto es obligatorio.");
+    if(proyectos.find(p=>p.name.toLowerCase()===name.trim().toLowerCase())) return setErrP("Ya existe un proyecto con ese nombre.");
+    setErrP("");
+    const fb=getFBl(); const newP={id:Date.now(),name:name.trim(),desc:desc.trim(),active:true};
+    if(fb){ await fb.addDoc(fb.collection(fb.db,"proyectos"),newP); } else { setProyectos(ps=>[...ps,newP]); }
+    setName(""); setDesc("");
+  };
+  const toggle=async p=>{ const fb=getFBl(); if(fb&&p._docId){ await fb.updateDoc(fb.doc(fb.db,"proyectos",p._docId),{active:!p.active}); } else { setProyectos(ps=>ps.map(x=>x.id===p.id?{...x,active:!x.active}:x)); } };
+  const del=async p=>{ const fb=getFBl(); if(fb&&p._docId){ await fb.deleteDoc(fb.doc(fb.db,"proyectos",p._docId)); } else { setProyectos(ps=>ps.filter(x=>x.id!==p.id)); } };
+
+  const active=proyectos.filter(p=>p.active);
+  const inactive=proyectos.filter(p=>!p.active);
+
+  return(
+    <div>
+      <div className="pm-header">
+        <div>
+          <div className="pm-title">📁 Gestión de Proyectos</div>
+          <div className="pm-subtitle">Los proyectos activos aparecen en el resumen por proveedor para asignarlos al pedido</div>
+        </div>
+        <div style={{display:"flex",gap:8,fontSize:".8rem",color:"var(--muted)",fontWeight:700}}>
+          <span style={{background:"#dcfce7",color:"#15803d",padding:"4px 12px",borderRadius:20}}>{active.length} activos</span>
+          {inactive.length>0&&<span style={{background:"#f1f5f9",color:"#64748b",padding:"4px 12px",borderRadius:20}}>{inactive.length} archivados</span>}
+        </div>
+      </div>
+
+      {/* active projects */}
+      {active.length===0&&inactive.length===0
+        ?<div className="pm-empty">🗂️ No hay proyectos todavía. Añade el primero abajo.</div>
+        :<div className="pm-grid">
+          {active.map(p=>(
+            <div key={p.id} className="pm-card">
+              <div className="pm-card-info">
+                <div className="pm-card-name">📁 {p.name}</div>
+                {p.desc&&<div className="pm-card-desc">{p.desc}</div>}
+              </div>
+              <div className="pm-card-meta">
+                <span className="pm-status-pill active">Activo</span>
+                <button className="pm-btn-toggle" onClick={()=>toggle(p)} title="Archivar">📦</button>
+                <button className="pm-btn-del" onClick={()=>del(p)} title="Eliminar">✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      }
+
+      {/* archived */}
+      {inactive.length>0&&(
+        <div style={{marginBottom:"1.25rem"}}>
+          <div style={{fontSize:".72rem",fontWeight:800,textTransform:"uppercase",letterSpacing:".05em",color:"var(--muted)",marginBottom:8}}>Archivados</div>
+          <div className="pm-grid">
+            {inactive.map(p=>(
+              <div key={p.id} className="pm-card" style={{opacity:.65}}>
+                <div className="pm-card-info">
+                  <div className="pm-card-name" style={{color:"var(--muted)"}}>📦 {p.name}</div>
+                  {p.desc&&<div className="pm-card-desc">{p.desc}</div>}
+                </div>
+                <div className="pm-card-meta">
+                  <span className="pm-status-pill inactive">Archivado</span>
+                  <button className="pm-btn-toggle" onClick={()=>toggle(p)} title="Reactivar" style={{color:"#15803d",borderColor:"#a7f3cc"}}>♻️</button>
+                  <button className="pm-btn-del" onClick={()=>del(p)} title="Eliminar">✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* add form */}
+      <div className="pm-add-form">
+        <div className="pm-add-title">➕ Nuevo proyecto</div>
+        {errP&&<div className="err-msg" style={{marginBottom:10}}>⚠️ {errP}</div>}
+        <div className="pm-add-row">
+          <div className="form-group">
+            <label className="form-label">Nombre <span className="req">*</span></label>
+            <input className="form-input" placeholder="Ej: TFG María García" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addProj()}/>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Descripción <span className="opt">(opcional)</span></label>
+            <input className="form-input" placeholder="Breve descripción del proyecto" value={desc} onChange={e=>setDesc(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addProj()}/>
+          </div>
+          <div style={{paddingBottom:2}}>
+            <button className="btn-primary" onClick={addProj} style={{height:42,whiteSpace:"nowrap"}}>+ Añadir</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+/* ── EXCEL GENERATOR ── */
+function generatePedidoExcel(proveedor, orders, info) {
+  const XLSX = window.XLSX;
+  if(!XLSX){ alert("Error: librería Excel no cargada"); return; }
+
+  const wb = XLSX.utils.book_new();
+  const wsData = [];
+
+  // Row 1: empty
+  wsData.push([]);
+  // Row 2: title
+  wsData.push([null,null,null,null,null,"         SOLICITUD DE PEDIDO"]);
+  // Row 3-4: empty
+  wsData.push([]); wsData.push([]);
+  // Row 5: headers
+  wsData.push([null,"Dirección de envío",null,null,null,"Datos de facturación",null,"Datos Proveedor"]);
+  // Row 6 — provider name + address line 1
+  const pi = info || {};
+  wsData.push([null,"Fundación IMDEA Energía",null,null,null,"Fundación IMDEA Energía",null, pi.nombre||proveedor]);
+  // Row 7
+  wsData.push([null,"Avenida Ramón de la Sagra 3",null,null,null,"Avda. Ramón de la Sagra, 3",null, pi.direccion||""]);
+  // Row 8
+  wsData.push([null,"Parque Tecnológico de Móstoles",null,null,null,"Parque Tecnológico de Móstoles",null, pi.ciudad ? (pi.cp ? "("+pi.cp+") "+pi.ciudad : pi.ciudad) : ""]);
+  // Row 9
+  wsData.push([null,"28935 - Móstoles (MADRID)",null,null,null,"28935 Móstoles, Madrid",null, ""]);
+  // Row 10
+  wsData.push([null,"Tel:  91 737 1135",null,null,null,"Tel:  91 737 11 20",null, pi.tel ? "Tel: "+pi.tel : ""]);
+  // Row 11
+  wsData.push([null,null,null,null,null,"C.I.F: G-84912716",null, pi.fax ? "Fax: "+pi.fax : ""]);
+  // Row 12
+  wsData.push([null,"Att.: ",null,null,null,null,null, pi.nif ? "NIF: "+pi.nif : ""]);
+  // Row 12b — email (H12)
+  // email added separately via cell write below
+  // Row 13
+  wsData.push([null,"Unidad:","UPTQ (PLANTA PILOTO o Laboratorio PLANTA 2)"]);
+  // Row 14: empty
+  wsData.push([]);
+  // Row 15: date and order number
+  const today = new Date().toLocaleDateString("es-ES");
+  wsData.push([null,"FECHA: ",today,null,null,"Nº PEDIDO:","P-XXXXX"]);
+  // Row 16: empty
+  wsData.push([]);
+  // Row 17: table headers
+  wsData.push([null,"ITEM","CANTIDAD","REFERENCIA","DESCRIPCION",null,null,null,"PRECIO UNITARIO","DTO.","TOTAL Iva no Incl"]);
+  // Row 18: empty (merged with 17)
+  wsData.push([]);
+
+  // Rows 19+: items — flatten all products from all orders
+  let itemNum = 1;
+  const firstItemRow = 19;
+  let currentRow = firstItemRow;
+  const itemRows = [];
+
+  orders.forEach(order => {
+    order.products.forEach(p => {
+      wsData.push([
+        null,
+        itemNum,
+        Number(p.unidades)||0,
+        p.codigo||"",
+        p.nombre||"",
+        null, null, null,
+        Number(p.precio)||0,
+        0,
+        null  // formula added separately
+      ]);
+      itemRows.push(currentRow);
+      itemNum++;
+      currentRow++;
+    });
+  });
+
+  // Fill up to at least 10 item rows
+  while(itemNum <= 10) {
+    wsData.push([null, itemNum, null, null, null, null, null, null, null, null, null]);
+    itemRows.push(currentRow);
+    itemNum++;
+    currentRow++;
+  }
+
+  const lastItemRow = currentRow - 1;
+
+  // Subtotal row
+  wsData.push([null,null,null,null,null,null,null,null,"SUBTOTAL",null,null]);
+  const subtotalRow = currentRow; currentRow++;
+  // IVA row
+  wsData.push([null,null,null,null,null,null,null,null,"IVA",0.21,null]);
+  const ivaRow = currentRow; currentRow++;
+  // TOTAL row
+  wsData.push([null,null,null,null,null,null,null,null,"TOTAL",null,null]);
+  const totalRow = currentRow; currentRow++;
+  // Plazo / forma pago
+  wsData.push([null,null,"PLAZO DE ENTREGA:",null,null,null,null,"Sello de la empresa:"]);
+  wsData.push([null,null,"Forma de Pago:"]);
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Helper to set yellow fill on a cell
+  function yellowCell(ws, addr, value){
+    if(!ws[addr]) ws[addr] = {};
+    ws[addr].v = value;
+    ws[addr].t = "s";
+    ws[addr].s = { fill: { fgColor: { rgb: "FFFF00" } } };
+  }
+
+  // H12 = email pedidos (yellow)
+  yellowCell(ws, "H12", pi.email ? "email pedidos: "+pi.email : "email pedidos:");
+
+  // Add formulas for item totals and subtotal/iva/total
+  itemRows.forEach(r => {
+    ws["K"+r] = { f: "+(C"+r+"*I"+r+")-(C"+r+"*I"+r+"*J"+r+")", t:"n" };
+  });
+  ws["K"+subtotalRow] = { f: "SUM(K"+firstItemRow+":K"+lastItemRow+")", t:"n" };
+  ws["K"+ivaRow]      = { f: "+K"+subtotalRow+"*J"+ivaRow, t:"n" };
+  ws["K"+totalRow]    = { f: "+K"+subtotalRow+"+K"+ivaRow, t:"n" };
+
+  // Merges (mirroring template)
+  ws["!merges"] = [
+    {s:{r:4,c:1},e:{r:4,c:3}},   // B5:D5
+    {s:{r:5,c:1},e:{r:5,c:3}},   // B6:D6
+    {s:{r:6,c:1},e:{r:6,c:3}},   // B7:D7
+    {s:{r:7,c:1},e:{r:7,c:4}},   // B8:E8
+    {s:{r:8,c:1},e:{r:8,c:4}},   // B9:E9
+    {s:{r:9,c:1},e:{r:9,c:4}},   // B10:E10
+    {s:{r:4,c:7},e:{r:4,c:10}},  // H5:K5
+    {s:{r:14,c:2},e:{r:14,c:3}}, // C15:D15
+    {s:{r:14,c:6},e:{r:14,c:8}}, // G15:I15
+    {s:{r:16,c:1},e:{r:17,c:1}}, // B17:B18
+    {s:{r:16,c:2},e:{r:17,c:2}}, // C17:C18
+    {s:{r:16,c:3},e:{r:17,c:3}}, // D17:D18
+    {s:{r:16,c:4},e:{r:17,c:7}}, // E17:H18
+    {s:{r:16,c:8},e:{r:17,c:8}}, // I17:I18
+    {s:{r:16,c:9},e:{r:17,c:9}}, // J17:J18
+    {s:{r:16,c:10},e:{r:17,c:10}},// K17:K18
+  ];
+
+  // Mark H6:H12 yellow (provider data cells)
+  ["H6","H7","H8","H9","H10","H11"].forEach(addr=>{
+    if(ws[addr]){
+      ws[addr].s = { fill: { fgColor: { rgb: "FFFF00" } } };
+    } else {
+      ws[addr] = { v:"", t:"s", s:{ fill: { fgColor: { rgb: "FFFF00" } } } };
+    }
+  });
+
+  // Column widths
+  ws["!cols"] = [
+    {wch:2},    // A
+    {wch:8},    // B ITEM
+    {wch:12},   // C CANTIDAD
+    {wch:20},   // D REFERENCIA
+    {wch:30},   // E DESCRIPCIÓN
+    {wch:8},{wch:8},{wch:8}, // F G H
+    {wch:14},   // I PRECIO
+    {wch:9},    // J DTO
+    {wch:16},   // K TOTAL
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Hoja 1");
+  const filename = "Pedido_"+proveedor.replace(/[^a-zA-Z0-9]/g,"_")+".xlsx";
+  XLSX.writeFile(wb, filename, {cellStyles:true});
+}
+
+/* ── PROVIDER DATABASE ── */
+function ProviderDB({proveedores,setProveedores}){
+  const emptyForm = {nombre:"",direccion:"",ciudad:"",cp:"",tel:"",fax:"",nif:"",email:""};
+  const [showModal,setShowModal] = useState(false);
+  const [editing,setEditing]     = useState(null); // null=new, id=edit
+  const [form,setForm]           = useState(emptyForm);
+  const [err,setErr]             = useState("");
+
+  const sf=(k,v)=>setForm(f=>({...f,[k]:v}));
+
+  const openNew=()=>{ setForm(emptyForm); setEditing(null); setErr(""); setShowModal(true); };
+  const openEdit=p=>{ setForm({nombre:p.nombre||"",direccion:p.direccion||"",ciudad:p.ciudad||"",cp:p.cp||"",tel:p.tel||"",fax:p.fax||"",nif:p.nif||"",email:p.email||""}); setEditing(p.id); setErr(""); setShowModal(true); };
+
+  const save=async()=>{
+    if(!form.nombre.trim()) return setErr("El nombre del proveedor es obligatorio.");
+    const fb=getFB();
+    if(editing===null){
+      // new
+      const exists=proveedores.find(p=>p.nombre.toLowerCase()===form.nombre.trim().toLowerCase());
+      if(exists) return setErr("Ya existe un proveedor con ese nombre.");
+      const newP={...form,nombre:form.nombre.trim(),id:Date.now()};
+      if(fb){ await fb.addDoc(fb.collection(fb.db,"proveedores"),newP); }
+      else { setProveedores(ps=>[...ps,newP]); }
+    } else {
+      // edit
+      const p=proveedores.find(x=>x.id===editing);
+      const updated={...p,...form,nombre:form.nombre.trim()};
+      if(fb&&p?._docId){ await fb.updateDoc(fb.doc(fb.db,"proveedores",p._docId),updated); }
+      else { setProveedores(ps=>ps.map(x=>x.id===editing?updated:x)); }
+    }
+    setShowModal(false);
+  };
+
+  const del=async p=>{
+    if(!confirm("¿Eliminar proveedor "+p.nombre+"?")) return;
+    const fb=getFB();
+    if(fb&&p._docId){ await fb.deleteDoc(fb.doc(fb.db,"proveedores",p._docId)); }
+    else { setProveedores(ps=>ps.filter(x=>x.id!==p.id)); }
+  };
+
+  const fields = [
+    {k:"nombre",  lbl:"Nombre *",        full:true,  ph:"Nombre comercial del proveedor"},
+    {k:"nif",     lbl:"NIF/CIF",         full:false, ph:"B12345678"},
+    {k:"email",   lbl:"Email pedidos",   full:false, ph:"pedidos@proveedor.com"},
+    {k:"tel",     lbl:"Teléfono",        full:false, ph:"+34 91 000 0000"},
+    {k:"fax",     lbl:"Fax",            full:false, ph:"+34 91 000 0001"},
+    {k:"direccion",lbl:"Dirección",      full:true,  ph:"Calle, número"},
+    {k:"cp",      lbl:"C.P.",           full:false, ph:"28000"},
+    {k:"ciudad",  lbl:"Ciudad",         full:false, ph:"Madrid"},
+  ];
+
+  return(
+    <div>
+      <div className="pm-header">
+        <div>
+          <div className="pm-title">🏪 Base de datos de proveedores</div>
+          <div className="pm-subtitle">La info de cada proveedor se usa para rellenar automáticamente el Excel de pedido</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span style={{background:"#eef4ff",color:"#2563eb",padding:"4px 12px",borderRadius:20,fontSize:".8rem",fontWeight:700}}>{proveedores.length} proveedores</span>
+          <button className="btn-primary" onClick={openNew} style={{fontSize:".82rem",padding:"8px 16px"}}>+ Añadir proveedor</button>
+        </div>
+      </div>
+
+      {proveedores.length===0
+        ?<div className="pm-empty">🏪 No hay proveedores todavía. Añade el primero.</div>
+        :<div className="pdb-grid">
+          {proveedores.map(p=>(
+            <div key={p.id} className="pdb-card">
+              <div className="pdb-card-head">
+                <div className="pdb-card-name">🏪 {p.nombre}</div>
+                {p.nif&&<span style={{fontSize:".7rem",fontWeight:700,color:"var(--muted)"}}>{p.nif}</span>}
+              </div>
+              <div className="pdb-card-body">
+                {p.email&&<div className="pdb-field"><span className="pdb-field-lbl">Email</span><span className="pdb-field-val"><a href={"mailto:"+p.email}>{p.email}</a></span></div>}
+                {p.tel&&<div className="pdb-field"><span className="pdb-field-lbl">Tel.</span><span className="pdb-field-val">{p.tel}</span></div>}
+                {p.fax&&<div className="pdb-field"><span className="pdb-field-lbl">Fax</span><span className="pdb-field-val">{p.fax}</span></div>}
+                {p.direccion&&<div className="pdb-field"><span className="pdb-field-lbl">Dirección</span><span className="pdb-field-val">{p.direccion}{p.cp?" · "+p.cp:""}{p.ciudad?" · "+p.ciudad:""}</span></div>}
+                {!p.email&&!p.tel&&!p.direccion&&<div style={{fontSize:".78rem",color:"var(--muted)",fontStyle:"italic"}}>Sin datos de contacto</div>}
+              </div>
+              <div className="pdb-card-actions">
+                <button className="pdb-btn-edit" onClick={()=>openEdit(p)}>✏️ Editar</button>
+                <button className="pdb-btn-del" onClick={()=>del(p)}>🗑️</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      }
+
+      {showModal&&(
+        <div className="pdb-modal-overlay" onClick={e=>e.target===e.currentTarget&&setShowModal(false)}>
+          <div className="pdb-modal">
+            <h3>{editing===null?"➕ Nuevo proveedor":"✏️ Editar proveedor"}</h3>
+            <div className="yellow-hint">⭐ Los campos completados se rellenarán automáticamente en el Excel de pedido (celdas amarillas)</div>
+            {err&&<div className="err-msg" style={{margin:"10px 0"}}>⚠️ {err}</div>}
+            <div className="pdb-form-grid" style={{marginTop:14}}>
+              {fields.map(f=>(
+                <div key={f.k} className={"form-group"+(f.full?" full":"")} style={{marginBottom:0}}>
+                  <label className="form-label">{f.lbl}</label>
+                  <input className="form-input" placeholder={f.ph} value={form[f.k]} onChange={e=>sf(f.k,e.target.value)}/>
+                </div>
+              ))}
+            </div>
+            <div className="modal-footer" style={{marginTop:"1.25rem"}}>
+              <button className="btn-sec" onClick={()=>setShowModal(false)}>Cancelar</button>
+              <button className="btn-primary" onClick={save}>💾 Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── POR PROVEEDOR ACTIVO (lista pedidos, pre-gestión) ── */
+const ACTIVE_STATUSES = ["pendiente","revision","aprobado","proceso"];
+function PorProveedorActivo({orders, onCambiarStatusBloque}){
+  const [enviandoProv, setEnviandoProv] = useState(null); // confirm inline
+
+  // Only show pendiente — the others are already in progress
+  const active = orders.filter(o=>o.status==="pendiente");
+  const provMap = {};
+  active.forEach(o=>{
+    const k = o.proveedor||"Sin proveedor";
+    if(!provMap[k]) provMap[k]=[];
+    provMap[k].push(o);
+  });
+  const pvList = Object.entries(provMap)
+    .map(([name,ords])=>({name, orders:ords, total:ords.reduce((s,o)=>s+tot(o.products),0)}))
+    .sort((a,b)=>b.total-a.total);
+
+  if(pvList.length===0) return(
+    <div style={{textAlign:"center",padding:"2rem",color:"var(--muted)",fontWeight:600,fontSize:".9rem"}}>
+      No hay pedidos pendientes por agrupar.
+    </div>
+  );
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:"1rem",marginTop:"1rem"}}>
+      <div style={{background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:10,padding:"10px 14px",fontSize:".8rem",color:"#1d4ed8",fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+        📋 Aquí se agrupan los pedidos pendientes por proveedor. Al pulsar "Enviar al jefe" el pedido pasa a <b>Por gestionar</b> para que el responsable asigne proyecto y apruebe.
+      </div>
+      {pvList.map(pv=>{
+        const nItems = pv.orders.reduce((s,o)=>s+o.products.length,0);
+        const solicitantes = [...new Set(pv.orders.map(o=>o.solicitante||o.responsable))];
+        const isOpen = enviandoProv===pv.name;
+        return(
+          <div key={pv.name} style={{background:"white",borderRadius:14,border:"1.5px solid var(--border)",boxShadow:"var(--shadow)",overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:".9rem 1.2rem",flexWrap:"wrap",gap:10}}>
+              <div>
+                <div style={{fontWeight:900,fontSize:"1rem",color:"var(--navy)",display:"flex",alignItems:"center",gap:8}}>
+                  🏪 {pv.name}
+                </div>
+                <div style={{fontSize:".73rem",color:"var(--muted)",fontWeight:600,marginTop:3}}>
+                  {pv.orders.length} solicitud{pv.orders.length!==1?"es":""} · {nItems} artículo{nItems!==1?"s":""} · {solicitantes.slice(0,3).join(", ")}{solicitantes.length>3?` +${solicitantes.length-3}`:""}
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <div style={{fontWeight:900,fontSize:"1.2rem",color:"var(--accent)",letterSpacing:"-.5px"}}>{eur(pv.total)}</div>
+                {isOpen ? (
+                  <div style={{display:"flex",alignItems:"center",gap:6,background:"#eff6ff",border:"1.5px solid #bfdbfe",borderRadius:9,padding:"6px 10px"}}>
+                    <span style={{fontSize:".72rem",fontWeight:700,color:"#1d4ed8",whiteSpace:"nowrap"}}>¿Enviar al jefe para gestión?</span>
+                    <button onClick={()=>{ onCambiarStatusBloque(pv.orders,"revision"); setEnviandoProv(null); }}
+                      style={{background:"#1d4ed8",color:"white",border:"none",borderRadius:7,padding:"5px 12px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                      📋 Sí, enviar
+                    </button>
+                    <button onClick={()=>setEnviandoProv(null)}
+                      style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:7,padding:"5px 9px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={()=>setEnviandoProv(pv.name)}
+                    style={{background:"linear-gradient(135deg,#60a5fa,#1d4ed8)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(29,78,216,.3)",whiteSpace:"nowrap"}}>
+                    📋 Enviar al jefe
+                  </button>
+                )}
+              </div>
+            </div>
+            <div style={{overflowX:"auto",borderTop:"1.5px solid var(--border)"}}>
+              <table className="ptable" style={{margin:0,borderRadius:0}}>
+                <thead>
+                  <tr>
+                    <th>Artículo</th>
+                    <th>Código</th>
+                    <th>Solicitante</th>
+                    <th style={{textAlign:"right"}}>Uds.</th>
+                    <th style={{textAlign:"right"}}>Precio/ud</th>
+                    <th style={{textAlign:"right"}}>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pv.orders.flatMap((o,oi)=>
+                    o.products.map((p,pi)=>(
+                      <tr key={oi+"-"+pi}>
+                        <td style={{fontWeight:800}}>{p.nombre}</td>
+                        <td style={{color:"var(--muted)",fontSize:".78rem"}}>{p.codigo||"—"}</td>
+                        <td style={{fontSize:".8rem",color:"var(--muted)",fontWeight:700}}>{o.solicitante||o.responsable}</td>
+                        <td style={{textAlign:"right"}}>{p.unidades}</td>
+                        <td style={{textAlign:"right"}}>{eur(p.precio)}</td>
+                        <td style={{textAlign:"right",fontWeight:800,color:"var(--accent)"}}>{eur(p.unidades*p.precio)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="5" style={{textAlign:"right",fontWeight:800,fontSize:".75rem",textTransform:"uppercase",letterSpacing:".05em",color:"var(--muted)"}}>Total {pv.name}</td>
+                    <td style={{textAlign:"right",fontWeight:900,color:"var(--accent)",fontSize:"1rem"}}>{eur(pv.total)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── INCIDENCIAS TAB ── */
+function IncidenciasTab({orders, onVolverPedir, onResuelta, onCerrar}){
+  const { useState:useLocalState } = React;
+  const incidencias = orders.filter(o=>o.status==="incidencia");
+  // Per-card state: which card has "resuelta" panel open, and its nota draft
+  const [resueltas, setResueltas] = useLocalState({});   // {id: {open, nota, err}}
+
+  const openResuelta = (id) => setResueltas(p=>({...p,[id]:{open:true,nota:"",err:""}}));
+  const closeResuelta = (id) => setResueltas(p=>({...p,[id]:{open:false,nota:"",err:""}}));
+  const setNota = (id,v) => setResueltas(p=>({...p,[id]:{...p[id],nota:v,err:""}}));
+
+  if(incidencias.length===0) return(
+    <div style={{textAlign:"center",padding:"3rem",color:"var(--muted)",fontWeight:600,fontSize:".95rem"}}>
+      <div style={{fontSize:"2.5rem",marginBottom:".75rem"}}>✅</div>
+      No hay incidencias abiertas. Todo en orden.
+    </div>
+  );
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:12,padding:"10px 14px",fontSize:".8rem",color:"#92400e",fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+        ⚠️ {incidencias.length} incidencia{incidencias.length!==1?"s":""} pendiente{incidencias.length!==1?"s":""} de gestión.
+      </div>
+
+      {incidencias.map(o=>{
+        const rs = resueltas[o.id]||{open:false,nota:"",err:""};
+        return(
+          <div key={o.id} style={{background:"white",borderRadius:14,border:"1.5px solid #fde68a",boxShadow:"0 2px 8px rgba(217,119,6,.1)",overflow:"hidden"}}>
+
+            {/* Header */}
+            <div style={{padding:"1rem 1.2rem",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10}}>
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                  <span style={{fontWeight:900,fontSize:".95rem",color:"#92400e"}}>{o.id}</span>
+                  <span className="tag st-incidencia">⚠️ Incidencia</span>
+                  <span style={{fontSize:".75rem",color:"var(--muted)",fontWeight:600}}>📅 {o.date}</span>
+                </div>
+                {o.origenId&&<div style={{fontSize:".72rem",color:"var(--muted)",fontWeight:600,marginBottom:2}}>
+                  Pedido origen: <b>{o.origenId}</b>
+                </div>}
+                <div style={{fontSize:".78rem",color:"var(--muted)",fontWeight:600,marginBottom:o.notas?4:0}}>
+                  🏪 {o.proveedor}
+                  {o.solicitante&&<span> · 👤 {o.solicitante}</span>}
+                  <span> · {o.products.length} artículo{o.products.length!==1?"s":""}</span>
+                </div>
+                {o.notas&&(
+                  <div style={{fontSize:".78rem",color:"#92400e",fontWeight:700,background:"#fef9c3",borderRadius:7,padding:"5px 10px",maxWidth:500,whiteSpace:"pre-wrap"}}>
+                    📝 {o.notas}
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons — hidden when resuelta panel is open */}
+              {!rs.open&&(
+                <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"flex-start"}}>
+                  <button onClick={()=>onVolverPedir(o)}
+                    style={{background:"linear-gradient(135deg,#818cf8,#6c63ff)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(108,99,255,.3)"}}>
+                    🔄 Volver a pedir
+                  </button>
+                  <button onClick={()=>openResuelta(o.id)}
+                    style={{background:"linear-gradient(135deg,#22c55e,#15803d)",color:"white",border:"none",borderRadius:9,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(21,128,61,.3)"}}>
+                    ✅ Incidencia resuelta
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Resuelta panel */}
+            {rs.open&&(
+              <div style={{margin:"0 1.2rem 1rem",background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"12px 14px"}}>
+                <div style={{fontWeight:800,fontSize:".85rem",color:"#15803d",marginBottom:8}}>✅ Marcar como resuelta</div>
+                <div style={{fontSize:".78rem",color:"#166534",fontWeight:600,marginBottom:8}}>
+                  Describe qué ha pasado. Esta nota se añadirá al pedido original y podrás entonces cerrarlo o marcarlo como recibido.
+                </div>
+                <textarea
+                  value={rs.nota}
+                  onChange={e=>setNota(o.id,e.target.value)}
+                  placeholder="Ej: artículo devuelto sin coste, sustitución enviada el 03/03, reembolso procesado…"
+                  autoFocus
+                  style={{width:"100%",padding:"8px 10px",border:"1.5px solid "+(rs.err?"#dc2626":"#86efac"),borderRadius:8,fontFamily:"'Nunito',sans-serif",fontSize:".84rem",fontWeight:600,outline:"none",resize:"vertical",minHeight:65,marginBottom:6,background:"white"}}
+                />
+                {rs.err&&<div style={{fontSize:".72rem",color:"#dc2626",fontWeight:800,marginBottom:6}}>⚠️ {rs.err}</div>}
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <button onClick={()=>{
+                      if(!rs.nota.trim()){setResueltas(p=>({...p,[o.id]:{...p[o.id],err:"La nota es obligatoria."}}));return;}
+                      onResuelta(o,"recibido",rs.nota.trim());
+                      closeResuelta(o.id);
+                    }}
+                    style={{background:"linear-gradient(135deg,#22c55e,#15803d)",color:"white",border:"none",borderRadius:8,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                    ✅ Resuelta — marcar recibido
+                  </button>
+                  <button onClick={()=>{
+                      if(!rs.nota.trim()){setResueltas(p=>({...p,[o.id]:{...p[o.id],err:"La nota es obligatoria."}}));return;}
+                      onResuelta(o,"rechazado",rs.nota.trim());
+                      closeResuelta(o.id);
+                    }}
+                    style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fecaca",borderRadius:8,padding:"7px 14px",fontSize:".78rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>
+                    🗑️ Resuelta — no se compra más
+                  </button>
+                  <button onClick={()=>closeResuelta(o.id)}
+                    style={{background:"white",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 12px",fontSize:".78rem",fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Articles table */}
+            <table className="ptable" style={{borderTop:"1px solid var(--border)"}}>
+              <thead><tr><th>Artículo</th><th>Código</th><th style={{textAlign:"right"}}>Uds.</th><th style={{textAlign:"right"}}>Precio</th></tr></thead>
+              <tbody>
+                {o.products.map((p,i)=>(
+                  <tr key={i}>
+                    <td style={{fontWeight:800}}>{p.nombre}</td>
+                    <td style={{color:"var(--muted)",fontSize:".78rem"}}>{p.codigo||"—"}</td>
+                    <td style={{textAlign:"right"}}>{p.unidades}</td>
+                    <td style={{textAlign:"right",fontWeight:800,color:"var(--accent)"}}>{eur(p.precio)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App(){
+  const { useEffect } = React;
+  const [orders,setOrders]       = useState(initialOrders);
+  const [proyectos,setProyectos]   = useState([]);
+  const [proveedores,setProveedores] = useState([]);
+  const [catalogo,setCatalogo]       = useState([]);
+  const [filter,setFilter]       = useState("todos");
+  const [search,setSearch]       = useState("");
+  const [vistaProveedor,setVistaProveedor] = useState(false);
+  const [showNew,setShowNew]     = useState(false);
+  const [showLogin,setShowLogin] = useState(false);
+  const [isAdmin,setIsAdmin]     = useState(false);
+  const [selected,setSelected]   = useState(null);
+  const [tab,setTab]             = useState("pedidos");
+  const [initialDashTab,setInitialDashTab] = useState("gasto");
+
+  const goToProveedorGestion = ()=>{ setTab("resumen"); setInitialDashTab("proveedor"); };
+  const [loading,setLoading]     = useState(true);
+
+  useEffect(()=>{
+    const iv = setInterval(()=>{
+      const fb=getFB(); if(!fb) return;
+      clearInterval(iv);
+      fb.onSnapshot(fb.collection(fb.db,"orders"),snap=>{
+        setOrders(snap.docs.map(d=>({...d.data(),_docId:d.id})));
+        setLoading(false);
+      });
+      fb.onSnapshot(fb.collection(fb.db,"proyectos"),snap=>{
+        setProyectos(snap.docs.map(d=>({...d.data(),_docId:d.id})));
+      });
+      fb.onSnapshot(fb.collection(fb.db,"proveedores"),snap=>{
+        setProveedores(snap.docs.map(d=>({...d.data(),_docId:d.id})));
+      });
+      fb.onSnapshot(fb.collection(fb.db,"catalogo"),snap=>{
+        setCatalogo(snap.docs.map(d=>({...d.data(),_docId:d.id})));
+      });
+    },300);
+    return ()=>clearInterval(iv);
+  },[]);
+
+  const stats=useMemo(()=>({
+    total:    orders.length,
+    pendiente:orders.filter(o=>o.status==="pendiente").length,
+    proceso:  orders.filter(o=>o.status==="proceso").length,
+    realizado:orders.filter(o=>o.status==="realizado").length,
+    recibido: orders.filter(o=>o.status==="recibido").length,
+  }),[orders]);
+
+  const STATUS_ORDER = {pendiente:0,revision:1,aprobado:2,proceso:3,realizado:4,recibido:5,rechazado:6};
+  const filtered=useMemo(()=>orders.filter(o=>{
+    if(o.status==="incidencia") return false; // incidencias only shown in their own tab
+    if(filter!=="todos"&&o.status!==filter) return false;
+    if(search.trim()){const s=search.toLowerCase();return (o.solicitante||o.responsable||"").toLowerCase().includes(s)||o.proveedor.toLowerCase().includes(s)||o.id.toLowerCase().includes(s)||o.products.some(p=>p.nombre.toLowerCase().includes(s))||((o.proyecto||"").toLowerCase().includes(s));}
+    return true;
+  }).sort((a,b)=>(STATUS_ORDER[a.status]??9)-(STATUS_ORDER[b.status]??9)||(new Date(b.date)-new Date(a.date))),[orders,filter,search]);
+
+  const addOrder = async o=>{
+    const fb=getFB();
+    if(fb){ await fb.addDoc(fb.collection(fb.db,"orders"),o); }
+    else { setOrders(p=>[o,...p]); }
+    setShowNew(false);
+  };
+  const changeStatus=async(id,st,extraFields={})=>{
+    const fb=getFB();
+    const o=orders.find(x=>x.id===id);
+    const update = {status:st, ...extraFields};
+    if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), update); }
+    else { setOrders(p=>p.map(x=>x.id===id?{...x,...update}:x)); }
+    setSelected(p=>p&&p.id===id?{...p,...update}:p);
+  };
+  const cambiarStatusBloque=async(bloqueOrders, st, responsable)=>{
+    const fb=getFB();
+    for(const o of bloqueOrders){
+      const extra = {status:st, ...(responsable?{responsable}:{})};
+      if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId), extra); }
+      else { setOrders(p=>p.map(x=>x.id===o.id?{...x,...extra}:x)); }
+    }
+  };
+  const deleteOrder=async(id)=>{
+    const fb=getFB();
+    const o=orders.find(x=>x.id===id);
+    if(fb&&o?._docId){ await fb.deleteDoc(fb.doc(fb.db,"orders",o._docId)); }
+    else { setOrders(p=>p.filter(x=>x.id!==id)); }
+    setSelected(null);
+  };
+  const crearIncidencia=async(order, selIdx, nota)=>{
+    const fb=getFB();
+    const selProds = selIdx.map(i=>order.products[i]);
+    const restProds = order.products.filter((_,i)=>!selIdx.includes(i));
+    const allSelected = restProds.length===0;
+    const ts=Date.now();
+    if(allSelected){
+      // All items → revert whole order to pendiente, clear project/responsable, append note
+      const notaUpd = (order.notas||"") + (order.notas?"\n\n":"") + "[Incidencia: "+nota+"]";
+      const upd = {status:"pendiente",proyecto:"",responsable:"",notas:notaUpd};
+      if(fb&&order._docId) await fb.updateDoc(fb.doc(fb.db,"orders",order._docId),upd);
+      else setOrders(p=>p.map(x=>x.id===order.id?{...x,...upd}:x));
+      setSelected(null);
+    } else {
+      // Partial → create new incidencia order with selected items
+      const incId="INC-"+String(ts).slice(-5);
+      const incOrder={
+        id:incId, date:new Date().toISOString().split("T")[0],
+        status:"incidencia",
+        category:order.category,
+        solicitante:order.solicitante||"",
+        responsable:order.responsable||"",
+        proveedor:order.proveedor,
+        notas:"[Incidencia sobre "+order.id+(order.idinete?" / "+order.idinete:"")+": "+nota+"]",
+        proyecto:order.proyecto||"",
+        bloque:"",
+        idinete:"",
+        products:selProds,
+        origenId:order.id,
+      };
+      if(fb){
+        await fb.addDoc(fb.collection(fb.db,"orders"),incOrder);
+      } else {
+        setOrders(p=>[incOrder,...p]);
+      }
+      setSelected(null);
+    }
+  };
+
+  const volverPedir=async(incOrder)=>{
+    // Create a brand new order from the incidencia, as if user submitted it fresh
+    const fb=getFB();
+    const ts=Date.now();
+    const newId="PED-"+String(ts).slice(-6);
+    const newOrder={
+      id:newId,
+      date:new Date().toISOString().split("T")[0],
+      status:"pendiente",
+      category:incOrder.category,
+      solicitante:incOrder.solicitante||"",
+      responsable:"",
+      proveedor:incOrder.proveedor,
+      notas:"[Nuevo pedido por incidencia de "+incOrder.id+(incOrder.origenId?" / origen: "+incOrder.origenId:"")+"]",
+      proyecto:"",
+      bloque:"",
+      idinete:"",
+      products:incOrder.products,
+    };
+    if(fb){
+      // Keep incidencia record but mark it as closed (rechazado so it leaves the tab)
+      if(incOrder._docId) await fb.updateDoc(fb.doc(fb.db,"orders",incOrder._docId),{status:"rechazado"});
+      await fb.addDoc(fb.collection(fb.db,"orders"),newOrder);
+    } else {
+      setOrders(p=>[newOrder,...p.map(x=>x.id===incOrder.id?{...x,status:"rechazado"}:x)]);
+    }
+  };
+
+  const resolverIncidencia=async(incOrder, nuevoStatus, nota)=>{
+    const fb=getFB();
+    // Find the original order and add the resolution note to it
+    const origen = incOrder.origenId ? orders.find(x=>x.id===incOrder.origenId) : null;
+    const notaResolucion = "[Incidencia resuelta ("+incOrder.id+"): "+nota+"]";
+    if(origen){
+      const notaOrigen = (origen.notas||"") + (origen.notas?"
+
+":"") + notaResolucion;
+      if(fb&&origen._docId) await fb.updateDoc(fb.doc(fb.db,"orders",origen._docId),{notas:notaOrigen});
+      else setOrders(p=>p.map(x=>x.id===origen.id?{...x,notas:notaOrigen}:x));
+    }
+    // Close the incidencia record itself
+    const incUpd = {status:nuevoStatus, notas:(incOrder.notas||"")+(incOrder.notas?"
+
+":"")+notaResolucion};
+    if(fb&&incOrder._docId) await fb.updateDoc(fb.doc(fb.db,"orders",incOrder._docId),incUpd);
+    else setOrders(p=>p.map(x=>x.id===incOrder.id?{...x,...incUpd}:x));
+  };
+
+  const asignarProyecto=async(id,proyecto)=>{
+    const fb=getFB();
+    const o=orders.find(x=>x.id===id);
+    // Only update the project field, status change is handled separately via confirmarProyecto
+    if(fb&&o?._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{proyecto}); }
+    else { setOrders(p=>p.map(x=>x.id===id?{...x,proyecto}:x)); }
+    setSelected(p=>p&&p.id===id?{...p,proyecto}:p);
+  };
+  const confirmarProyecto=async(ids)=>{
+    // Advance orders to "proceso" after confirming project assignment
+    const fb=getFB();
+    for(const id of ids){
+      const o=orders.find(x=>x.id===id);
+      if(!o?.proyecto) continue;
+      const nuevoStatus="proceso";
+      if(fb&&o._docId){ await fb.updateDoc(fb.doc(fb.db,"orders",o._docId),{status:nuevoStatus}); }
+      else { setOrders(p=>p.map(x=>x.id===id?{...x,status:nuevoStatus}:x)); }
+    }
+  };
+
+  const dividirPedido=async({orders:srcOrders, itemsA, itemsB, projA, projB, unassigned, allItems})=>{
+    const fb=getFB();
+    const now=new Date().toISOString();
+    const prodsA=[...itemsA,...unassigned].map(i=>i.product);
+    const prodsB=itemsB.map(i=>i.product);
+    if(prodsA.length===0||prodsB.length===0) return;
+
+    const base=srcOrders[0];
+    const ts=Date.now();
+    const idA="PED-"+String(ts).slice(-6)+"A";
+    const idB="PED-"+String(ts+1).slice(-6)+"B";
+
+    // Determine block names: if already a block, subdivide it
+    const baseBloque = base.bloque || base.proveedor;
+    // Strip existing " · Bloque X" suffix to get the root proveedor name
+    const rootProv = base.proveedor;
+    // Count existing blocks for this proveedor to name the new ones
+    const existingBloques = [...new Set(
+      orders.filter(o=>o.proveedor===rootProv && o.bloque)
+             .map(o=>o.bloque)
+    )];
+    // Find a base number: if splitting a block that already has a number, branch from it
+    const bloqueBase = base.bloque
+      ? base.bloque.replace(/ · Bloque .*/,"")
+      : rootProv;
+    // Find next available block numbers
+    const allBloqueNums = orders
+      .filter(o=>o.proveedor===rootProv)
+      .map(o=>{ const m=(o.bloque||"").match(/Bloque (\d+)$/); return m?parseInt(m[1]):0; });
+    const maxN = allBloqueNums.length>0 ? Math.max(...allBloqueNums) : 0;
+    const bloqueA = rootProv+" · Bloque "+(maxN+1);
+    const bloqueB = rootProv+" · Bloque "+(maxN+2);
+
+    const orderA={
+      id:idA, date:now,
+      responsable:base.responsable,
+      proveedor:rootProv,
+      bloque:bloqueA,
+      category:base.category,
+      notas:base.notas||"",
+      status:projA?"proceso":"pendiente",
+      proyecto:projA||"",
+      products:prodsA,
+    };
+    const orderB={
+      id:idB, date:now,
+      responsable:base.responsable,
+      proveedor:rootProv,
+      bloque:bloqueB,
+      category:base.category,
+      notas:base.notas||"",
+      status:projB?"proceso":"pendiente",
+      proyecto:projB||"",
+      products:prodsB,
+    };
+
+    if(fb){
+      for(const o of srcOrders){
+        if(o._docId) await fb.deleteDoc(fb.doc(fb.db,"orders",o._docId));
+      }
+      await fb.addDoc(fb.collection(fb.db,"orders"),orderA);
+      await fb.addDoc(fb.collection(fb.db,"orders"),orderB);
+    } else {
+      setOrders(prev=>{
+        const filtered=prev.filter(o=>!srcOrders.find(s=>s.id===o.id));
+        return [orderA,orderB,...filtered];
+      });
+    }
+  };
+
+  const unirBloques=async(proveedorName, srcOrders)=>{
+    const fb=getFB();
+    const now=new Date().toISOString();
+    if(!srcOrders || srcOrders.length<2) return;
+    const base=srcOrders[0];
+    const ts=Date.now();
+    const idMerged="PED-"+String(ts).slice(-6)+"M";
+    const allProds=srcOrders.flatMap(o=>o.products);
+    const merged={
+      id:idMerged, date:now,
+      responsable:base.responsable,
+      proveedor:proveedorName,
+      bloque:"",
+      category:base.category,
+      notas:base.notas||"",
+      status:"pendiente",
+      proyecto:"",
+      products:allProds,
+    };
+    if(fb){
+      for(const o of srcOrders){
+        if(o._docId) await fb.deleteDoc(fb.doc(fb.db,"orders",o._docId));
+      }
+      await fb.addDoc(fb.collection(fb.db,"orders"),merged);
+    } else {
+      setOrders(prev=>{
+        const ids=new Set(srcOrders.map(o=>o.id));
+        return [merged,...prev.filter(o=>!ids.has(o.id))];
+      });
+    }
+  };
+
+  const SCARDS=[
+    {cls:"sc-pink",  emoji:"📋",num:stats.total,    label:"Total pedidos"},
+    {cls:"sc-orange",emoji:"⏳",num:stats.pendiente,label:"Pendientes"},
+    {cls:"sc-blue",  emoji:"🔄",num:stats.proceso,  label:"En proceso"},
+    {cls:"sc-yellow",emoji:"📦",num:stats.realizado,label:"Realizados"},
+    {cls:"sc-green", emoji:"✅",num:stats.recibido, label:"Recibidos"},
+  ];
+
+  return(
+    <>
+      <nav className="navbar">
+        <div className="navbar-brand">
+          <div className="nav-logo">🛒</div>
+          Compras <span className="brand-dot">TQ</span>
+        </div>
+        <div className="navbar-right">
+          {isAdmin
+            ?<button className="btn-admin on" onClick={()=>{setIsAdmin(false);setTab("pedidos");}}>⚙️ Admin · Salir</button>
+            :<button className="btn-admin" onClick={()=>setShowLogin(true)}>🔒 Admin</button>}
+          <button className="btn-primary" onClick={()=>setShowNew(true)}>+ Nueva Solicitud</button>
+        </div>
+      </nav>
+
+      <main className="main">
+        {loading&&<div style={{textAlign:"center",padding:"4rem",color:"var(--muted)"}}><div style={{fontSize:"2rem",marginBottom:"0.75rem"}}>⏳</div><div style={{fontWeight:700,fontSize:"1rem"}}>Conectando con la base de datos…</div></div>}
+        {!loading&&<>
+        {/* stat cards */}
+        <div className="stats-grid">
+          {SCARDS.map(s=>(
+            <div key={s.cls} className={`stat-card ${s.cls}`}>
+              <div className="stat-row">
+                <div className="stat-num">{s.num}</div>
+                <div className="stat-icon-pill">{s.emoji} {s.label}</div>
+              </div>
+              <div className="stat-label">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Banner avviso capo — pedidos por gestionar */}
+        {isAdmin && orders.filter(o=>o.status==="revision").length>0 && (
+          <div
+            onClick={()=>goToProveedorGestion()}
+            style={{cursor:"pointer",background:"linear-gradient(135deg,#eff6ff,#dbeafe)",border:"2px solid #93c5fd",borderRadius:14,padding:"12px 18px",marginBottom:"1rem",display:"flex",alignItems:"center",gap:14,boxShadow:"0 2px 12px rgba(59,130,246,.15)",transition:"transform .15s,box-shadow .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(59,130,246,.25)";}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="0 2px 12px rgba(59,130,246,.15)";}}
+          >
+            <div style={{background:"#1d4ed8",borderRadius:10,padding:"8px 10px",fontSize:"1.3rem",flexShrink:0}}>📋</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:900,fontSize:".95rem",color:"#1e3a8a"}}>
+                Tienes {orders.filter(o=>o.status==="revision").length} pedido{orders.filter(o=>o.status==="revision").length!==1?"s":""} pendiente{orders.filter(o=>o.status==="revision").length!==1?"s":""} de gestión
+              </div>
+              <div style={{fontSize:".75rem",color:"#3b82f6",fontWeight:600,marginTop:2}}>
+                Asigna proyectos, divide bloques y aprueba en el Resumen → Por proveedor
+              </div>
+            </div>
+            <div style={{background:"#1d4ed8",color:"white",borderRadius:9,padding:"6px 14px",fontSize:".78rem",fontWeight:800,whiteSpace:"nowrap",flexShrink:0}}>
+              Ver ahora →
+            </div>
+          </div>
+        )}
+
+        {/* tabs — solo cuando es admin */}
+        {isAdmin&&(
+          <div className="tabs">
+            <button className={`tab-btn${tab==="pedidos"?" act":""}`} onClick={()=>setTab("pedidos")}>📋 Pedidos</button>
+            <div className="tab-btn-wrap">
+              <button className={`tab-btn${tab==="resumen"?" act":""}`} onClick={()=>setTab("resumen")}>📊 Resumen</button>
+              {orders.filter(o=>o.status==="revision").length>0&&<span className="tab-dot">{orders.filter(o=>o.status==="revision").length}</span>}
+            </div>
+            <button className={`tab-btn${tab==="proyectos"?" act":""}`} onClick={()=>setTab("proyectos")}>📁 Proyectos</button>
+            <button className={`tab-btn${tab==="proveedores"?" act":""}`} onClick={()=>setTab("proveedores")}>🏪 Proveedores</button>
+            <button className={`tab-btn${tab==="catalogo"?" act":""}`} onClick={()=>setTab("catalogo")}>📦 Catálogo</button>
+            <div className="tab-btn-wrap">
+              <button className={`tab-btn${tab==="incidencias"?" act":""}`} onClick={()=>setTab("incidencias")} style={tab==="incidencias"?{background:"#d97706",borderColor:"#d97706"}:{}}>⚠️ Incidencias</button>
+              {orders.filter(o=>o.status==="incidencia").length>0&&<span className="tab-dot">{orders.filter(o=>o.status==="incidencia").length}</span>}
+            </div>
+          </div>
+        )}
+
+        {/* CONTENT */}
+        {tab==="catalogo"&&isAdmin
+          ? <CatalogAdmin catalogo={catalogo} setCatalogo={setCatalogo}/>
+          : tab==="proveedores"&&isAdmin
+          ? <ProviderDB proveedores={proveedores} setProveedores={setProveedores}/>
+          : tab==="proyectos"&&isAdmin
+          ? <ProjectManager proyectos={proyectos} setProyectos={setProyectos}/>
+          : tab==="incidencias"&&isAdmin
+          ? <IncidenciasTab orders={orders} onStatusChange={changeStatus} onVolverPedir={volverPedir} onResuelta={resolverIncidencia} onCerrar={(id)=>changeStatus(id,"rechazado")}/>
+          : tab==="resumen"&&isAdmin
+          ? <Dashboard orders={orders} proyectos={proyectos} onAsignarProyecto={asignarProyecto} onConfirmarProyecto={confirmarProyecto} onDividirPedido={dividirPedido} onUnirBloques={unirBloques} onCambiarStatusBloque={cambiarStatusBloque} isAdmin={isAdmin} initialDashTab={initialDashTab} proveedores={proveedores}/>
+          : (
+          <>
+            <div className="filters-section">
+              <div className="search-wrap">
+                <span className="search-icon">🔍</span>
+                <input placeholder="Buscar por solicitante, proveedor, proyecto o producto…" value={search} onChange={e=>setSearch(e.target.value)} disabled={vistaProveedor}/>
+              </div>
+              <div className="filter-pills" style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+                {!vistaProveedor&&STATUSES.map(s=>(
+                  <button key={s.key} className={`filter-btn${filter===s.key?" act":""}`} onClick={()=>setFilter(s.key)}>{s.label}</button>
+                ))}
+                {isAdmin&&(
+                  <button
+                    onClick={()=>setVistaProveedor(v=>!v)}
+                    style={{marginLeft:"auto",background:vistaProveedor?"linear-gradient(135deg,#6d28d9,#4c1d95)":"linear-gradient(135deg,#a78bfa,#7c3aed)",color:"white",border:"none",borderRadius:9,padding:"7px 15px",fontSize:".8rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:6,boxShadow:"0 2px 8px rgba(109,40,217,.3)",whiteSpace:"nowrap"}}>
+                    🏪 {vistaProveedor?"← Volver a lista":"Por proveedor"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {vistaProveedor
+              ? <PorProveedorActivo orders={orders} onCambiarStatusBloque={cambiarStatusBloque}/>
+              : <div className="orders-list">
+              {filtered.length===0
+                ?<div className="empty-state"><span className="big">📭</span><p>Todavía no hay solicitudes</p><small>Pulsa "+ Nueva Solicitud" para crear la primera</small></div>
+                :filtered.map(o=>{
+                  const locked = !isAdmin && LOCKED_STATUSES.includes(o.status);
+                  return(
+                  <div className="order-card" key={o.id} onClick={()=>setSelected(o)}>
+                    <div className="order-card-left">
+                      <div className="order-meta">
+                        <span className="order-id">{o.idinete||o.id}</span>
+                        <StatusTag status={o.status}/>
+                        <CatTag cat={o.category}/>
+                        {isAdmin&&o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
+                        <span className="order-date">{fmt(o.date)}</span>
+                      </div>
+                      <div className="order-info">
+                        <span>Solicitante <b>{o.solicitante||o.responsable}</b></span>
+                        {isAdmin&&o.responsable&&<span>Responsable <b>{o.responsable}</b></span>}
+                        <span>Proveedor <b>{o.proveedor}</b></span>
+                        <span>Artículos <b>{o.products.length}</b></span>
+                      </div>
+                      <div className="order-chips">
+                        {o.products.slice(0,3).map((p,i)=><span key={i} className="chip">{p.nombre}</span>)}
+                        {o.products.length>3&&<span className="chip">+{o.products.length-3} más</span>}
+                      </div>
+                    </div>
+                    {isAdmin&&(
+                      <div className="order-right">
+                        <div className="order-total-num">{eur(tot(o.products))}</div>
+                        <div className="order-total-lbl">total</div>
+                      </div>
+                    )}
+                  </div>
+                  );
+                })
+              }
+            </div>}
+          </>
+        )}
+        </>}
+      </main>
+      {showNew   &&<NewRequestModal onClose={()=>setShowNew(false)} onSubmit={addOrder} proyectos={proyectos} proveedores={proveedores} catalogo={catalogo}/>}
+      {showLogin &&<LoginModal onClose={()=>setShowLogin(false)} onSuccess={()=>{setIsAdmin(true);setShowLogin(false);}}/>}
+      {selected  &&<OrderDetailModal order={selected} isAdmin={isAdmin} onClose={()=>setSelected(null)} onStatusChange={changeStatus} onDelete={deleteOrder} proyectos={proyectos} onAsignarProyecto={asignarProyecto} proveedores={proveedores} onIncidencia={crearIncidencia}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compras TQ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyC3bi23d54_c9Hwu0XDass8tRwJ3fAY3dc",
+    authDomain: "bdd-compras-uptq.firebaseapp.com",
+    projectId: "bdd-compras-uptq",
+    storageBucket: "bdd-compras-uptq.firebasestorage.app",
+    messagingSenderId: "862773575107",
+    appId: "1:862773575107:web:599d678b8ae2b1d7b15176"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  window._fb = { db, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc };
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f5f7ff;
+  --surface: #ffffff;
+  --navy: #2d3a5e;
+  --accent: #6c63ff;
+  --border: #e8eaf6;
+  --text: #2d3a5e;
+  --muted: #8f96b3;
+  --shadow: 0 2px 8px rgba(108,99,255,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 6px 24px rgba(108,99,255,0.13);
+  --radius: 16px;
+}
+body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+#root { min-height: 100vh; }
+
+/* ── NAVBAR ── */
+.navbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 2rem; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(108,99,255,0.07);
+}
+.navbar-brand { font-size: 1.25rem; font-weight: 900; color: var(--navy); display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; }
+.brand-dot { color: var(--accent); }
+.nav-logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg,#a78bfa,#6c63ff); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 2px 8px rgba(108,99,255,0.35); }
+.navbar-right { display: flex; align-items: center; gap: 10px; }
+.btn-admin { background: #f3f0ff; color: var(--accent); border: 1.5px solid #ddd6fe; padding: 7px 16px; border-radius: 10px; font-size: .875rem; font-weight: 700; cursor: pointer; font-family: 'Nunito',sans-serif; display: flex; align-items: center; gap: 6px; transition: all .2s; }
+.btn-admin:hover { background: #ede9fe; }
+.btn-admin.on { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-primary { background: linear-gradient(135deg,#818cf8,#6c63ff); color: white; border: none; padding: 9px 20px; border-radius: 10px; font-size: .9rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px rgba(108,99,255,.35); transition: all .2s; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(108,99,255,.45); }
+
+/* ── MAIN ── */
+.main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+/* ── TABS (admin) ── */
+.tabs { display: flex; gap: 6px; margin-bottom: 1.5rem; }
+.tab-btn { padding: 8px 20px; border-radius: 20px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: .875rem; font-weight: 700; font-family: 'Nunito',sans-serif; color: var(--muted); transition: all .18s; }
+.tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tab-btn.act { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 8px rgba(108,99,255,.3); }
+.tab-btn-wrap { position: relative; display: inline-flex; }
+.tab-dot { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; background: #dc2626; color: white; border-radius: 20px; font-size: .65rem; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bg); padding: 0 4px; pointer-events: none; }
+.st-incidencia { background: #fef3c7; color: #b45309; }
+.incidencia-item-row { display:flex; align-items:center; gap:10px; padding:.6rem .8rem; border-radius:10px; border:1.5px solid var(--border); background:white; cursor:pointer; transition:all .13s; user-select:none; }
+.incidencia-item-row:hover { border-color:#f59e0b; background:#fffbeb; }
+.incidencia-item-row.selected { border-color:#f59e0b; background:#fef9c3; }
+
+/* ── STAT CARDS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 14px; margin-bottom: 2rem; }
+.stat-card { border-radius: var(--radius); padding: 1.2rem 1.3rem 1rem; border: 1.5px solid transparent; display: flex; flex-direction: column; gap: 10px; transition: transform .2s,box-shadow .2s; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.sc-pink   { background: #fff0f6; border-color: #ffd6e8; }
+.sc-orange { background: #fff8ed; border-color: #fde8c8; }
+.sc-blue   { background: #eef4ff; border-color: #c7d9ff; }
+.sc-green  { background: #edfff5; border-color: #a7f3cc; }
+.sc-brown  { background: #fff7ed; border-color: #fed7aa; }
+.sc-yellow { background: #fefce8; border-color: #fde68a; }
+.stat-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.stat-num { font-size: 2.4rem; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+.sc-pink .stat-num   { color: #db2777; }
+.sc-orange .stat-num { color: #ea580c; }
+.sc-blue .stat-num   { color: #2563eb; }
+.sc-green .stat-num  { color: #16a34a; }
+.sc-brown .stat-num  { color: #c2410c; }
+.sc-yellow .stat-num { color: #a16207; }
+.stat-icon-pill { padding: 5px 10px; border-radius: 20px; font-size: .75rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+.sc-pink .stat-icon-pill   { background: #fce7f3; color: #be185d; }
+.sc-orange .stat-icon-pill { background: #ffedd5; color: #c2410c; }
+.sc-blue .stat-icon-pill   { background: #dbeafe; color: #1d4ed8; }
+.sc-green .stat-icon-pill  { background: #dcfce7; color: #15803d; }
+.sc-brown .stat-icon-pill  { background: #ffedd5; color: #c2410c; }
+.sc-yellow .stat-icon-pill { background: #fef08a; color: #a16207; }
+.stat-label { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.sc-pink .stat-label   { color: #db2777; }
+.sc-orange .stat-label { color: #ea580c; }
+.sc-blue .stat-label   { color: #2563eb; }
+.sc-green .stat-label  { color: #16a34a; }
+.sc-brown .stat-label  { color: #c2410c; }
+.sc-yellow .stat-label { color: #a16207; }
+
+/* ── PRODUCT CATALOG ── */
+.catalog-overlay { position:fixed; inset:0; background:rgba(45,58,94,.5); z-index:300; display:flex; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px); }
+.catalog-modal { background:white; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.2); width:100%; max-width:700px; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; }
+.catalog-head { padding:1.25rem 1.5rem 1rem; border-bottom:1.5px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.catalog-head h3 { font-size:1.05rem; font-weight:900; color:var(--navy); margin:0; }
+.catalog-search { flex:1; min-width:180px; position:relative; }
+.catalog-search input { width:100%; padding:7px 12px 7px 32px; border:1.5px solid var(--border); border-radius:10px; font-family:'Nunito',sans-serif; font-size:.85rem; font-weight:600; outline:none; }
+.catalog-search input:focus { border-color:var(--accent); }
+.catalog-search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:.85rem; }
+.catalog-body { overflow-y:auto; flex:1; padding:.75rem 1rem; }
+.catalog-item { display:flex; align-items:center; gap:10px; padding:.75rem .9rem; border-radius:12px; border:1.5px solid var(--border); margin-bottom:7px; cursor:pointer; transition:all .15s; background:white; }
+.catalog-item:hover { border-color:var(--accent); background:#f9f8ff; transform:translateX(2px); }
+.catalog-item.selected { border-color:var(--accent); background:#f3f0ff; }
+.catalog-item-info { flex:1; min-width:0; }
+.catalog-item-name { font-weight:800; font-size:.88rem; color:var(--navy); }
+.catalog-item-meta { font-size:.72rem; color:var(--muted); font-weight:600; margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; }
+.catalog-item-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.75rem; flex-shrink:0; transition:all .15s; }
+.catalog-item.selected .catalog-item-check { background:var(--accent); border-color:var(--accent); color:white; }
+.catalog-foot { padding:.9rem 1.5rem; border-top:1.5px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.catalog-selected-count { font-size:.82rem; font-weight:700; color:var(--accent); }
+.fetch-btn { background:#f0fdf4; color:#15803d; border:1.5px solid #86efac; border-radius:8px; padding:4px 10px; font-size:.72rem; font-weight:800; cursor:pointer; font-family:'Nunito',sans-serif; display:flex; align-items:center; gap:4px; transition:all .15s; white-space:nowrap; }
+.fetch-btn:hover { background:#dcfce7; }
+.fetch-btn.loading { opacity:.6; cursor:wait; }
+.suggest-box { position:absolute; top:100%; left:0; right:0; background:white; border:1.5px solid var(--border); border-radius:10px; box-shadow:var(--shadow-md); z-index:50; max-height:200px; overflow-y:auto; margin-top:3px; }
+.suggest-item { padding:8px 12px; font-size:.82rem; font-weight:700; color:var(--navy); cursor:pointer; display:flex; align-items:center; gap:8px; }
+.suggest-item:hover { background:#f3f0ff; }
+
+/* ── PROVIDER DATABASE ── */
+.pdb-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(320px,1fr)); gap: 14px; margin-bottom: 1.5rem; }
+.pdb-card { background: white; border-radius: 14px; border: 1.5px solid var(--border); box-shadow: var(--shadow); overflow: hidden; transition: box-shadow .18s,transform .18s; }
+.pdb-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.pdb-card-head { padding: .9rem 1.1rem .7rem; background: linear-gradient(135deg,#f8f7ff,#f0eeff); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.pdb-card-name { font-weight: 900; font-size: 1rem; color: var(--navy); display: flex; align-items: center; gap: 7px; }
+.pdb-card-body { padding: .8rem 1.1rem; display: flex; flex-direction: column; gap: 4px; }
+.pdb-field { display: flex; gap: 8px; font-size: .78rem; }
+.pdb-field-lbl { color: var(--muted); font-weight: 700; min-width: 80px; flex-shrink: 0; }
+.pdb-field-val { color: var(--navy); font-weight: 600; word-break: break-all; }
+.pdb-field-val a { color: var(--accent); text-decoration: none; }
+.pdb-field-val a:hover { text-decoration: underline; }
+.pdb-card-actions { padding: .6rem 1.1rem .8rem; display: flex; gap: 7px; }
+.pdb-btn-edit { background: #f3f0ff; color: var(--accent); border: 1.5px solid #ddd6fe; border-radius: 8px; padding: 5px 12px; font-size: .75rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; transition: all .15s; }
+.pdb-btn-edit:hover { background: #ede9fe; }
+.pdb-btn-del { background: #fff0f6; color: #e11d48; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 5px 9px; font-size: .75rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; transition: all .15s; }
+.pdb-btn-del:hover { background: #fce7f3; }
+.pdb-modal-overlay { position: fixed; inset: 0; background: rgba(45,58,94,.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(3px); }
+.pdb-modal { background: white; border-radius: 20px; box-shadow: var(--shadow-md); padding: 1.75rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+.pdb-modal h3 { font-size: 1.1rem; font-weight: 900; color: var(--navy); margin-bottom: 1.2rem; }
+.pdb-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pdb-form-grid .full { grid-column: span 2; }
+.yellow-hint { font-size: .7rem; color: #b45309; font-weight: 700; background: #fef9c3; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 9px; margin-top: 4px; display: inline-block; }
+
+/* ── PROJECT MANAGER ── */
+.pm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.pm-title { font-size: 1.1rem; font-weight: 900; color: var(--navy); }
+.pm-subtitle { font-size: .8rem; color: var(--muted); font-weight: 600; margin-top: 2px; }
+.pm-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.pm-card { background: white; border-radius: 14px; border: 1.5px solid var(--border); padding: 1rem 1.25rem; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: box-shadow .18s; }
+.pm-card:hover { box-shadow: var(--shadow-md); }
+.pm-card-info { flex: 1; min-width: 0; }
+.pm-card-name { font-weight: 800; font-size: .95rem; color: var(--navy); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.pm-card-desc { font-size: .75rem; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pm-card-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.pm-status-pill { font-size: .7rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
+.pm-status-pill.active   { background: #dcfce7; color: #15803d; }
+.pm-status-pill.inactive { background: #f1f5f9; color: #64748b; }
+.pm-btn-toggle { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 5px 10px; font-size: .72rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; color: var(--muted); transition: all .15s; }
+.pm-btn-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.pm-btn-del { background: none; border: 1.5px solid #fecdd3; border-radius: 8px; padding: 5px 8px; font-size: .75rem; cursor: pointer; color: #e11d48; transition: all .15s; }
+.pm-btn-del:hover { background: #fff0f6; }
+.pm-add-form { background: var(--bg); border-radius: 14px; border: 1.5px dashed var(--border); padding: 1.25rem; }
+.pm-add-title { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 10px; }
+.pm-add-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.pm-add-row .form-group { flex: 1; min-width: 160px; margin-bottom: 0; }
+.pm-empty { text-align: center; padding: 2.5rem; color: var(--muted); font-size: .9rem; font-weight: 600; }
+
+/* select styled */
+select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238f96b3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+
+/* ── SPLIT ORDER MODAL ── */
+.split-overlay { position:fixed; inset:0; background:rgba(45,58,94,.55); z-index:400; display:flex; align-items:center; justify-content:center; padding:1rem; backdrop-filter:blur(4px); }
+.split-modal { background:white; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.22); width:100%; max-width:800px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+.split-head { padding:1.25rem 1.5rem 1rem; border-bottom:1.5px solid var(--border); }
+.split-head h3 { font-size:1.1rem; font-weight:900; color:var(--navy); margin:0 0 4px; }
+.split-head p  { font-size:.78rem; color:var(--muted); font-weight:600; margin:0; }
+.split-body { flex:1; overflow-y:auto; padding:1rem 1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.split-col { border:1.5px solid var(--border); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; }
+.split-col-head { padding:.75rem 1rem .7rem; display:flex; flex-direction:column; gap:7px; }
+.split-col-a { background:#f0f4ff; border-bottom:1.5px solid #c7d9ff; }
+.split-col-b { background:#fff3f0; border-bottom:1.5px solid #ffd6c8; }
+.split-col-title { font-size:.85rem; font-weight:900; color:var(--navy); }
+.split-col-proj select { width:100%; font-size:.78rem; padding:5px 28px 5px 9px; border:1.5px solid var(--border); border-radius:8px; font-family:'Nunito',sans-serif; font-weight:700; background-color:white; outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238f96b3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 9px center; cursor:pointer; }
+.split-items { padding:.5rem; display:flex; flex-direction:column; gap:4px; min-height:60px; flex:1; }
+.split-item-row { display:flex; align-items:center; gap:8px; padding:.55rem .7rem; border-radius:9px; border:1.5px solid var(--border); background:white; cursor:pointer; transition:all .13s; user-select:none; }
+.split-item-row:hover { border-color:var(--accent); background:#f9f8ff; }
+.split-item-row.in-a { border-color:#6c63ff55; background:#f3f0ff; }
+.split-item-row.in-b { border-color:#f9731688; background:#fff7f3; }
+.split-item-name { flex:1; font-size:.8rem; font-weight:800; color:var(--navy); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.split-item-meta { font-size:.72rem; color:var(--muted); font-weight:600; white-space:nowrap; }
+.split-item-arrow { font-size:.82rem; flex-shrink:0; }
+.split-col-total { padding:.4rem 1rem .75rem; font-size:.78rem; font-weight:800; color:var(--accent); text-align:right; }
+.split-empty { text-align:center; padding:1.5rem .5rem; color:var(--muted); font-size:.75rem; font-weight:600; }
+.split-unassigned { padding:.5rem; }
+.split-unassigned-label { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:6px; padding:0 .2rem; }
+.split-foot { padding:1rem 1.5rem; border-top:1.5px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.split-foot-hint { font-size:.75rem; color:var(--muted); font-weight:600; }
+
+/* ── FILTERS ── */
+.filters-section { margin-bottom: 1.25rem; }
+.search-wrap { position: relative; margin-bottom: 12px; }
+.search-wrap input { width: 100%; max-width: 400px; padding: 10px 14px 10px 40px; border: 1.5px solid var(--border); border-radius: 12px; font-size: .9rem; font-family: 'Nunito',sans-serif; font-weight: 600; background: white; outline: none; color: var(--text); transition: border-color .2s,box-shadow .2s; }
+.search-wrap input::placeholder { color: var(--muted); font-weight: 500; }
+.search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,.1); }
+.search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 15px; }
+.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: .82rem; font-weight: 700; font-family: 'Nunito',sans-serif; color: var(--muted); transition: all .15s; white-space: nowrap; }
+.filter-btn:hover { border-color: var(--accent); color: var(--accent); background: #f3f0ff; }
+.filter-btn.act { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 2px 8px rgba(108,99,255,.28); }
+
+/* ── ORDER CARDS ── */
+.orders-list { display: flex; flex-direction: column; gap: 10px; }
+.order-card { background: white; border-radius: var(--radius); padding: 1.1rem 1.4rem; border: 1.5px solid var(--border); cursor: pointer; transition: all .18s; display: flex; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: var(--shadow); }
+.order-card:hover { border-color: #c7d2fe; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.order-card-left { flex: 1; min-width: 0; }
+.order-meta { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; flex-wrap: wrap; }
+.order-id { font-weight: 900; font-size: .92rem; color: var(--accent); }
+.order-date { font-size: .78rem; color: var(--muted); font-weight: 600; }
+.order-proj { font-size: .78rem; color: #6c63ff; font-weight: 700; background: #f3f0ff; padding: 2px 8px; border-radius: 20px; }
+.order-info { display: flex; gap: 18px; font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.order-info span b { color: var(--text); font-weight: 800; }
+.order-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip { font-size: .75rem; background: var(--bg); color: var(--muted); padding: 2px 9px; border-radius: 20px; font-weight: 600; border: 1px solid var(--border); }
+.order-right { text-align: right; white-space: nowrap; }
+.order-total-num { font-size: 1.2rem; font-weight: 900; color: var(--accent); letter-spacing: -.5px; }
+.order-total-lbl { font-size: .7rem; color: var(--muted); font-weight: 700; margin-top: 1px; }
+
+/* ── TAGS ── */
+.tag { padding: 3px 10px; border-radius: 20px; font-size: .73rem; font-weight: 800; }
+.tag-cat.reactivos   { background: #dcfce7; color: #15803d; }
+.tag-cat.disolventes { background: #ede9fe; color: #6d28d9; }
+.tag-cat.gases       { background: #fce7f3; color: #9d174d; }
+.tag-cat.racoreria   { background: #dbeafe; color: #1e40af; }
+.tag-cat.otros       { background: #fff7ed; color: #c2410c; }
+.st-pendiente { background: #fff0f6; color: #be185d; }
+.st-revision  { background: #eff6ff; color: #1d4ed8; }
+.st-aprobado  { background: #f0fdf4; color: #15803d; }
+.st-proceso   { background: #f5f3ff; color: #6d28d9; }
+.st-realizado { background: #fff7ed; color: #c2410c; }
+.st-recibido  { background: #ecfdf5; color: #047857; }
+.st-rechazado { background: #fef2f2; color: #dc2626; }
+
+/* ── EMPTY ── */
+.empty-state { text-align: center; padding: 5rem 2rem; background: white; border-radius: var(--radius); border: 2px dashed var(--border); color: var(--muted); }
+.empty-state .big { font-size: 3rem; margin-bottom: 1rem; display: block; }
+.empty-state p { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+.empty-state small { font-size: .82rem; font-weight: 500; }
+
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(45,58,94,.4); backdrop-filter: blur(5px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; animation: fi .15s ease; }
+@keyframes fi { from{opacity:0}to{opacity:1} }
+.modal { background: white; border-radius: 20px; padding: 2rem; width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(45,58,94,.18); animation: su .2s ease; }
+.modal-sm { max-width: 400px; }
+@keyframes su { from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1} }
+.modal h2 { font-size: 1.3rem; font-weight: 900; color: var(--navy); margin-bottom: 1.5rem; letter-spacing: -.3px; }
+
+/* ── FORM ── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: .73rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); display: block; margin-bottom: 5px; }
+.req { color: #f43f5e; }
+.opt { color: var(--muted); font-weight: 600; font-size: .68rem; text-transform: none; letter-spacing: 0; }
+.form-input { width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 10px; font-size: .9rem; font-family: 'Nunito',sans-serif; font-weight: 600; outline: none; color: var(--text); background: white; transition: border-color .18s,box-shadow .18s; }
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,.1); }
+textarea.form-input { resize: vertical; min-height: 80px; }
+
+/* ── CATEGORY ── */
+.cat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+.cat-option { border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-size: .77rem; font-weight: 700; color: var(--muted); background: white; transition: all .15s; text-align: center; }
+.cat-option .ce { font-size: 1.3rem; }
+.cat-option:hover { border-color: var(--accent); background: #f3f0ff; color: var(--accent); }
+.cat-option.sel { border-color: var(--accent); background: #ede9fe; color: var(--accent); }
+.cat-option input { display: none; }
+
+/* ── PRODUCTS ── */
+.products-header { display: grid; grid-template-columns: 100px 1fr 140px 65px 95px 36px; gap: 8px; padding: 0 4px; margin-bottom: 5px; font-size: .69rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.product-row { display: grid; grid-template-columns: 100px 1fr 140px 65px 95px 36px; gap: 8px; margin-bottom: 7px; align-items: center; }
+.btn-remove { width: 34px; height: 34px; border-radius: 8px; background: #fff0f6; color: #e11d48; border: none; cursor: pointer; font-size: 14px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+.btn-remove:hover { background: #fce7f3; }
+.btn-add { background: #f3f0ff; color: var(--accent); border: 1.5px solid #ddd6fe; padding: 7px 14px; border-radius: 8px; font-size: .82rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; transition: all .15s; }
+.btn-add:hover { background: #ede9fe; }
+.total-line { text-align: right; font-weight: 900; font-size: 1rem; color: var(--accent); margin: 8px 0; letter-spacing: -.3px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1.5px solid var(--border); }
+.btn-sec { background: white; color: var(--text); border: 1.5px solid var(--border); padding: 9px 20px; border-radius: 10px; font-size: .9rem; font-weight: 700; cursor: pointer; font-family: 'Nunito',sans-serif; transition: all .15s; }
+.btn-sec:hover { border-color: var(--muted); }
+
+/* ── ADMIN DETAIL ── */
+.admin-zone { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 14px; padding: 14px 16px; margin-bottom: 1.4rem; }
+.admin-zone-title { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); margin-bottom: 10px; }
+.admin-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.btn-st { padding: 6px 13px; border-radius: 20px; border: 1.5px solid var(--border); font-size: .78rem; font-weight: 800; cursor: pointer; font-family: 'Nunito',sans-serif; transition: all .15s; background: white; color: var(--muted); }
+.btn-st:hover { border-color: var(--accent); color: var(--accent); background: #f3f0ff; }
+
+/* ── DETAIL MODAL ── */
+.detail-section { margin-bottom: 1.2rem; }
+.detail-section h3 { font-size: .71rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+.detail-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.detail-item { background: var(--bg); border-radius: 10px; padding: 10px 13px; border: 1px solid var(--border); }
+.detail-item .lbl { font-size: .69rem; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+.detail-item .val { font-weight: 800; font-size: .9rem; color: var(--text); }
+.ptable { width: 100%; border-collapse: collapse; }
+.ptable th { font-size: .69rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 800; text-align: left; padding: 6px 10px; border-bottom: 1.5px solid var(--border); }
+.ptable td { padding: 9px 10px; font-size: .875rem; font-weight: 600; border-bottom: 1px solid var(--bg); }
+.ptable tr:last-child td { border-bottom: none; }
+.notes-box { background: var(--bg); border-radius: 10px; padding: 11px 14px; font-size: .875rem; color: var(--muted); font-style: italic; font-weight: 600; border: 1px solid var(--border); }
+
+/* ── LOGIN ── */
+.lbox { text-align: center; }
+.lbox .sub { color: var(--muted); font-size: .875rem; margin-bottom: 1.5rem; font-weight: 600; }
+.err-msg { background: #fff0f6; color: #be185d; border-radius: 8px; padding: 8px 12px; font-size: .85rem; margin-bottom: 12px; font-weight: 700; border: 1px solid #fce7f3; }
+
+/* ── DASHBOARD ── */
+.dash-section { background: white; border-radius: var(--radius); border: 1.5px solid var(--border); padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: var(--shadow); }
+.dash-section-title { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
+.dash-kpi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 0; }
+.dash-kpi { border-radius: 12px; padding: 1rem 1.25rem; border: 1.5px solid transparent; }
+.dash-kpi.k-total  { background: #eef4ff; border-color: #c7d9ff; }
+.dash-kpi.k-month  { background: #edfff5; border-color: #a7f3cc; }
+.dash-kpi.k-avg    { background: #fff8ed; border-color: #fde8c8; }
+.dash-kpi .kv { font-size: 1.6rem; font-weight: 900; letter-spacing: -1px; }
+.dash-kpi.k-total .kv  { color: #2563eb; }
+.dash-kpi.k-month .kv  { color: #16a34a; }
+.dash-kpi.k-avg   .kv  { color: #ea580c; }
+.dash-kpi .kl { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.dash-kpi.k-total .kl  { color: #2563eb; }
+.dash-kpi.k-month .kl  { color: #16a34a; }
+.dash-kpi.k-avg   .kl  { color: #ea580c; }
+.dash-kpi .ks { font-size: .75rem; color: var(--muted); font-weight: 600; }
+
+/* cat breakdown */
+.cat-breakdown { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
+.cat-kpi { border-radius: 12px; padding: .9rem 1rem; border: 1.5px solid var(--border); background: var(--bg); }
+.cat-kpi .ck-label { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.cat-kpi .ck-val { font-size: 1.1rem; font-weight: 900; color: var(--navy); letter-spacing: -.5px; }
+.cat-kpi .ck-pct { font-size: .72rem; font-weight: 700; color: var(--muted); margin-top: 2px; }
+.cat-kpi .ck-bar-wrap { height: 4px; background: #e8eaf6; border-radius: 4px; margin-top: 6px; }
+.cat-kpi .ck-bar { height: 4px; border-radius: 4px; transition: width .6s ease; }
+.ck-reactivos   .ck-bar { background: #22c55e; }
+.ck-disolventes .ck-bar { background: #a855f7; }
+.ck-gases       .ck-bar { background: #ec4899; }
+.ck-racoreria   .ck-bar { background: #3b82f6; }
+.ck-otros       .ck-bar { background: #f97316; }
+
+/* chart */
+.chart-wrap { display: flex; align-items: flex-end; gap: 6px; height: 120px; margin-top: .5rem; }
+.chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.chart-bar { width: 100%; border-radius: 6px 6px 0 0; min-height: 3px; transition: height .4s ease; background: linear-gradient(180deg,#818cf8,#6c63ff); }
+.chart-bar.empty { background: #e8eaf6; }
+.chart-month-lbl { font-size: .65rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.chart-val-lbl { font-size: .6rem; font-weight: 800; color: var(--accent); }
+
+/* monthly table */
+.month-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.month-table th { font-size: .69rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 6px 10px; text-align: right; border-bottom: 1.5px solid var(--border); }
+.month-table th:first-child { text-align: left; }
+.month-table td { padding: 7px 10px; text-align: right; font-weight: 700; border-bottom: 1px solid var(--bg); color: var(--navy); }
+.month-table td:first-child { text-align: left; color: var(--muted); font-weight: 800; font-size: .8rem; }
+.month-table tr.cur td { background: #f5f3ff; }
+.month-table tr.cur td:first-child { color: var(--accent); border-radius: 8px 0 0 8px; }
+.month-table .zero { color: #cbd5e1; font-weight: 600; }
+.month-table tfoot td { font-weight: 900; color: var(--navy); border-top: 2px solid var(--border); padding-top: 10px; }
+
+/* year badge */
+.year-badge { background: var(--navy); color: white; font-size: .75rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; margin-left: auto; }
+
+/* dash sub-tabs */
+.dash-tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; }
+.dash-tab { padding: 7px 18px; border-radius: 20px; border: 1.5px solid var(--border); background: white; cursor: pointer; font-size: .82rem; font-weight: 700; font-family: 'Nunito',sans-serif; color: var(--muted); transition: all .15s; }
+.dash-tab:hover { border-color: var(--accent); color: var(--accent); background: #f3f0ff; }
+.dash-tab.act { background: var(--navy); color: white; border-color: var(--navy); }
+
+/* project cards */
+.proj-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 12px; }
+.proj-card { background: white; border-radius: 14px; border: 1.5px solid var(--border); padding: 1.1rem 1.25rem; box-shadow: var(--shadow); transition: transform .18s,box-shadow .18s; }
+.proj-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.proj-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.proj-name { font-size: .95rem; font-weight: 900; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+.proj-total { font-size: 1.1rem; font-weight: 900; color: var(--accent); letter-spacing: -.5px; }
+.proj-meta { font-size: .75rem; color: var(--muted); font-weight: 600; margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap; }
+.proj-cat-bar { display: flex; gap: 2px; height: 6px; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+.proj-cat-seg { height: 100%; transition: width .4s ease; }
+.proj-cat-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.proj-cat-chip { font-size: .68rem; font-weight: 800; padding: 2px 7px; border-radius: 20px; }
+.proj-bar-wrap2 { height: 5px; background: #e8eaf6; border-radius: 4px; margin-top: 4px; }
+.proj-bar2 { height: 5px; border-radius: 4px; background: linear-gradient(90deg,#818cf8,#6c63ff); transition: width .5s ease; }
+.proj-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.proj-table th { font-size: .69rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 7px 10px; text-align: left; border-bottom: 1.5px solid var(--border); }
+.proj-table td { padding: 9px 10px; font-weight: 600; border-bottom: 1px solid var(--bg); color: var(--navy); vertical-align: middle; }
+.proj-table tfoot td { font-weight: 900; border-top: 2px solid var(--border); padding-top: 10px; }
+
+@media(max-width:768px){
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .cat-grid { grid-template-columns: repeat(3,1fr); }
+  .cat-breakdown { grid-template-columns: repeat(3,1fr); }
+  .form-row { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: repeat(2,1fr); }
+  .products-header { display: none; }
+  .product-row { grid-template-columns: 1fr 1fr; }
+  .dash-kpi-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const ADMIN_PASSWORD = "admin123";
+
+const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+const STATUSES = [
+  {key:"todos",    label:"Todos"},
+  {key:"pendiente",label:"⏳ Pendiente"},
+  {key:"revision", label:"📋 Por gestionar"},
   {key:"aprobado", label:"🔖 Pdte. asignación"},
   {key:"proceso",  label:"🔄 En proceso"},
   {key:"realizado",label:"📦 Realizado"},
