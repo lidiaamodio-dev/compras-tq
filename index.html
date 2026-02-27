@@ -2528,9 +2528,7 @@ function App(){
     const ts=Date.now();
     if(allSelected){
       // All items → revert whole order to pendiente, clear project/responsable, append note
-      const notaUpd = (order.notas||"") + (order.notas?"
-
-":"") + "[Incidencia: "+nota+"]";
+      const notaUpd = (order.notas||"") + (order.notas?"\n\n":"") + "[Incidencia: "+nota+"]";
       const upd = {status:"pendiente",proyecto:"",responsable:"",notas:notaUpd};
       if(fb&&order._docId) await fb.updateDoc(fb.doc(fb.db,"orders",order._docId),upd);
       else setOrders(p=>p.map(x=>x.id===order.id?{...x,...upd}:x));
