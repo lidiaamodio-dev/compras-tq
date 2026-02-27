@@ -974,7 +974,7 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
         <div className="detail-section">
           <h3>Información</h3>
           <div className="detail-grid">
-            <div className="detail-item"><div className="lbl">Solicitante</div><div className="val">{order.solicitante||order.responsable}</div></div>
+            <div className="detail-item"><div className="lbl">Solicitante</div><div className="val">{order.solicitante||order.responsable||"—"}</div></div>
             {isAdmin&&order.responsable&&<div className="detail-item"><div className="lbl">Responsable pedido</div><div className="val">👤 {order.responsable}</div></div>}
             <div className="detail-item"><div className="lbl">Proveedor</div><div className="val">{order.proveedor}</div></div>
             <div className="detail-item"><div className="lbl">Categoría</div><div className="val"><CatTag cat={order.category}/></div></div>
@@ -984,7 +984,7 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
         {order.notas&&!isEnProceso&&(
           <div className="detail-section">
             <h3>Notas</h3>
-            <div className="notes-box">"{order.notas}"</div>
+            <div className="notes-box">{order.notas}</div>
           </div>
         )}
         <div className="detail-section">
