@@ -2927,7 +2927,7 @@ function App(){
                       </div>
                       <div className="order-info">
                         <span>Solicitante <b>{o.solicitante||o.responsable}</b></span>
-                        {isAdmin&&o.responsable&&<span>Responsable <b>{o.responsable}</b></span>}
+                        {o.responsable&&o.responsable!==(o.solicitante||"")&&<span style={{color:"#15803d",fontWeight:700}}>📞 Responsable <b>{o.responsable}</b></span>}
                         <span>Proveedor <b>{o.proveedor}</b></span>
                         <span>Artículos <b>{o.products.length}</b></span>
                       </div>
