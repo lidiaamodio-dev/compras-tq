@@ -978,9 +978,10 @@ function OrderDetailModal({order,isAdmin,onClose,onStatusChange,onDelete,proyect
             <div className="detail-item"><div className="lbl">Proveedor</div><div className="val">{order.proveedor}</div></div>
             <div className="detail-item"><div className="lbl">Categoría</div><div className="val"><CatTag cat={order.category}/></div></div>
             {isAdmin&&order.proyecto&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">Proyecto</div><div className="val">📁 {order.proyecto}</div></div>}
+            {order.notas&&<div className="detail-item" style={{gridColumn:"span 3"}}><div className="lbl">📝 Uso / Observaciones</div><div className="val" style={{whiteSpace:"pre-wrap",fontStyle:"normal",color:"var(--navy)"}}>{order.notas}</div></div>}
           </div>
         </div>
-        {order.notas&&!isEnProceso&&(
+        {false&&order.notas&&!isEnProceso&&(
           <div className="detail-section">
             <h3>Notas</h3>
             <div className="notes-box">{order.notas}</div>
@@ -2838,7 +2839,7 @@ function App(){
         </div>
         <div className="navbar-right">
           {isAdmin
-            ?<button className="btn-admin on" onClick={()=>{setIsAdmin(false);setTab("pedidos");}}>⚙️ Admin · Salir</button>
+            ?<button className="btn-admin on" onClick={()=>{setIsAdmin(false);setTab("pedidos");setVistaProveedor(false);}}>⚙️ Admin · Salir</button>
             :<button className="btn-admin" onClick={()=>setShowLogin(true)}>🔒 Admin</button>}
           <button className="btn-primary" onClick={()=>setShowNew(true)}>+ Nueva Solicitud</button>
         </div>
@@ -2933,7 +2934,7 @@ function App(){
               </div>
             </div>
 
-            {vistaProveedor
+            {vistaProveedor && isAdmin
               ? <PorProveedorActivo orders={orders} onCambiarStatusBloque={cambiarStatusBloque}/>
               : <div className="orders-list">
               {filtered.length===0
