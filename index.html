@@ -518,6 +518,7 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=
     if(!form.solicitante.trim()) return setErr("El campo Solicitante es obligatorio.");
     if(!form.proveedor.trim())   return setErr("El campo Proveedor es obligatorio.");
     if(!form.category)           return setErr("Selecciona una categoría.");
+    if(!form.notas.trim())       return setErr("El campo Uso / Observaciones es obligatorio.");
     if(prods.some(p=>!p.nombre.trim())) return setErr("Completa el nombre de todos los productos.");
     setErr("");
     onSubmit({id:gid(),date:new Date().toISOString().split("T")[0],status:"pendiente",
@@ -564,7 +565,7 @@ function NewRequestModal({onClose,onSubmit,proyectos=[],proveedores=[],catalogo=
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">Uso / Observaciones <span className="opt">(obligatorio indicar el uso)</span></label>
+          <label className="form-label">Uso / Observaciones <span className="req">*</span></label>
           <textarea className="form-input" placeholder="Indica el uso: p.ej. síntesis de zeolitas, reactivo genérico de laboratorio, calibración de equipo, etc." value={form.notas} onChange={e=>sf("notas",e.target.value)}/>
         </div>
         <div className="form-group">
