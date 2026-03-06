@@ -1792,6 +1792,31 @@ function CatalogModal({catalogo,onClose,onAdd}){
   );
 }
 
+/* ── PROVEEDOR PICKER (catalog) ── */
+function ProveedorPicker({value,onChange,provList}){
+  const isOtro=value&&!provList.includes(value);
+  const [manual,setManual]=useState(isOtro);
+  const handleSelect=e=>{
+    if(e.target.value==="__otro__"){ setManual(true); onChange(""); }
+    else { onChange(e.target.value); }
+  };
+  if(provList.length===0||manual){
+    return(
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        <input className="form-input" style={{flex:1}} placeholder="Sigma-Aldrich, VWR…" value={value} onChange={e=>onChange(e.target.value)} autoFocus={manual}/>
+        {provList.length>0&&<button type="button" onClick={()=>{setManual(false);onChange("");}} style={{background:"#f1f5f9",color:"var(--muted)",border:"1.5px solid var(--border)",borderRadius:8,padding:"7px 10px",cursor:"pointer",fontSize:".8rem",fontWeight:700,fontFamily:"'Nunito',sans-serif",whiteSpace:"nowrap"}}>← Lista</button>}
+      </div>
+    );
+  }
+  return(
+    <select className="form-input" value={value} onChange={handleSelect}>
+      <option value="">— Sin proveedor —</option>
+      {provList.map(p=><option key={p} value={p}>{p}</option>)}
+      <option value="__otro__">✏️ Otro (escribir manualmente)…</option>
+    </select>
+  );
+}
+
 /* ── CATALOG ADMIN ── */
 function CatalogAdmin({catalogo,setCatalogo}){
   const emptyForm={nombre:"",codigo:"",proveedor:"",categoria:"",url:"",precio:""};
@@ -1875,7 +1900,7 @@ function CatalogAdmin({catalogo,setCatalogo}){
             <div className="pdb-form-grid" style={{marginTop:12}}>
               <div className="form-group full" style={{marginBottom:0}}><label className="form-label">Nombre <span className="req">*</span></label><input className="form-input" placeholder="Ej: Etanol absoluto 99.8%" value={form.nombre} onChange={e=>sf("nombre",e.target.value)}/></div>
               <div className="form-group" style={{marginBottom:0}}><label className="form-label">Código</label><input className="form-input" placeholder="REF-001" value={form.codigo} onChange={e=>sf("codigo",e.target.value)}/></div>
-              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Proveedor habitual</label><input className="form-input" placeholder="Sigma-Aldrich, VWR…" value={form.proveedor} onChange={e=>sf("proveedor",e.target.value)}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Proveedor habitual</label><ProveedorPicker value={form.proveedor} onChange={v=>sf("proveedor",v)} provList={[...new Set(catalogo.map(p=>p.proveedor).filter(Boolean))].sort()}/></div>
               <div className="form-group" style={{marginBottom:0}}><label className="form-label">Categoría</label><select className="form-input" value={form.categoria} onChange={e=>sf("categoria",e.target.value)}><option value="">— Sin categoría —</option>{CATS.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}</select></div>
               <div className="form-group" style={{marginBottom:0}}><label className="form-label">Precio habitual (€)</label><input className="form-input" type="number" min="0" step="0.01" placeholder="0.00" value={form.precio} onChange={e=>sf("precio",e.target.value)}/></div>
               <div className="form-group full" style={{marginBottom:0}}>
