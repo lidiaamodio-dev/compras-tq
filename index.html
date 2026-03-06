@@ -1818,7 +1818,7 @@ function ProveedorPicker({value,onChange,provList}){
 }
 
 /* ── CATALOG ADMIN ── */
-function CatalogAdmin({catalogo,setCatalogo}){
+function CatalogAdmin({catalogo,setCatalogo,proveedores=[]}){
   const emptyForm={nombre:"",codigo:"",proveedor:"",categoria:"",url:"",precio:""};
   const [showModal,setShowModal]=useState(false);
   const [editing,setEditing]=useState(null);
@@ -1900,7 +1900,7 @@ function CatalogAdmin({catalogo,setCatalogo}){
             <div className="pdb-form-grid" style={{marginTop:12}}>
               <div className="form-group full" style={{marginBottom:0}}><label className="form-label">Nombre <span className="req">*</span></label><input className="form-input" placeholder="Ej: Etanol absoluto 99.8%" value={form.nombre} onChange={e=>sf("nombre",e.target.value)}/></div>
               <div className="form-group" style={{marginBottom:0}}><label className="form-label">Código</label><input className="form-input" placeholder="REF-001" value={form.codigo} onChange={e=>sf("codigo",e.target.value)}/></div>
-              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Proveedor habitual</label><ProveedorPicker value={form.proveedor} onChange={v=>sf("proveedor",v)} provList={[...new Set(catalogo.map(p=>p.proveedor).filter(Boolean))].sort()}/></div>
+              <div className="form-group" style={{marginBottom:0}}><label className="form-label">Proveedor habitual</label><ProveedorPicker value={form.proveedor} onChange={v=>sf("proveedor",v)} provList={proveedores.map(p=>p.nombre).sort()}/></div>
               <div className="form-group" style={{marginBottom:0}}><label className="form-label">Categoría</label><select className="form-input" value={form.categoria} onChange={e=>sf("categoria",e.target.value)}><option value="">— Sin categoría —</option>{CATS.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}</select></div>
               <div className="form-group" style={{marginBottom:0}}><label className="form-label">Precio habitual (€)</label><input className="form-input" type="number" min="0" step="0.01" placeholder="0.00" value={form.precio} onChange={e=>sf("precio",e.target.value)}/></div>
               <div className="form-group full" style={{marginBottom:0}}>
@@ -2903,7 +2903,7 @@ function App(){
 
         {/* CONTENT */}
         {tab==="catalogo"&&isAdmin
-          ? <CatalogAdmin catalogo={catalogo} setCatalogo={setCatalogo}/>
+          ? <CatalogAdmin catalogo={catalogo} setCatalogo={setCatalogo} proveedores={proveedores}/>
           : tab==="proveedores"&&isAdmin
           ? <ProviderDB proveedores={proveedores} setProveedores={setProveedores}/>
           : tab==="proyectos"&&isAdmin
