@@ -3008,7 +3008,8 @@ function App(){
                       const totalProds = grpOrders.reduce((s,o)=>s+o.products.length,0);
                       const totalEur = grpOrders.reduce((s,o)=>s+tot(o.products),0);
                       const responsable = firstO.responsable;
-                      const allProds = grpOrders.flatMap(o=>o.products.map(p=>({...p, _solicitante: o.solicitante||o.responsable})));
+                      const isProceso = firstO.status === "proceso";
+                      const isRealizado = firstO.status === "realizado";
                       return(
                         <div className="order-card" key={entry.key} style={{cursor:"default"}}>
                           <div className="order-card-left" style={{flex:1}}>
@@ -3025,16 +3026,47 @@ function App(){
                               <span>Proveedor <b>{firstO.proveedor}</b></span>
                               <span>Artículos <b>{totalProds}</b> de <b>{grpOrders.length}</b> solicitudes</span>
                             </div>
-                            {/* Items con solicitante por línea */}
-                            <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:4}}>
-                              {allProds.map((p,i)=>(
-                                <div key={i} style={{display:"flex",alignItems:"center",gap:8,background:"#f8f7ff",borderRadius:8,padding:"5px 10px",border:"1.5px solid #ede9fe"}}>
-                                  <span style={{fontWeight:800,fontSize:".82rem",color:"var(--navy)",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
-                                  {p.unidades&&p.unidades!==1&&<span style={{fontSize:".72rem",color:"var(--muted)",fontWeight:700,whiteSpace:"nowrap"}}>×{p.unidades}</span>}
-                                  <span style={{fontSize:".72rem",background:"#ede9fe",color:"var(--accent)",borderRadius:20,padding:"2px 8px",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>👤 {p._solicitante}</span>
-                                </div>
-                              ))}
+                            {/* Items con solicitante por línea — clicables para abrir detalle */}
+                            <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:4,marginBottom:10}}>
+                              {grpOrders.map((o,oi)=>
+                                o.products.map((p,pi)=>(
+                                  <div key={oi+"-"+pi}
+                                    onClick={()=>setSelected(o)}
+                                    style={{display:"flex",alignItems:"center",gap:8,background:"#f8f7ff",borderRadius:8,padding:"5px 10px",border:"1.5px solid #ede9fe",cursor:"pointer",transition:"all .13s"}}
+                                    onMouseEnter={e=>{e.currentTarget.style.background="#f0edff";e.currentTarget.style.borderColor="#a78bfa";}}
+                                    onMouseLeave={e=>{e.currentTarget.style.background="#f8f7ff";e.currentTarget.style.borderColor="#ede9fe";}}
+                                  >
+                                    <span style={{fontWeight:800,fontSize:".82rem",color:"var(--navy)",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
+                                    {p.unidades&&p.unidades!==1&&<span style={{fontSize:".72rem",color:"var(--muted)",fontWeight:700,whiteSpace:"nowrap"}}>×{p.unidades}</span>}
+                                    <span style={{fontSize:".72rem",background:"#ede9fe",color:"var(--accent)",borderRadius:20,padding:"2px 8px",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>👤 {o.solicitante||o.responsable}</span>
+                                    <span style={{fontSize:".65rem",color:"var(--muted)",fontWeight:600,flexShrink:0}}>Ver →</span>
+                                  </div>
+                                ))
+                              )}
                             </div>
+                            {/* Acciones del grupo */}
+                            {isAdmin && isProceso && (
+                              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",paddingTop:6,borderTop:"1.5px solid var(--border)"}}>
+                                <span style={{fontSize:".72rem",color:"var(--muted)",fontWeight:700}}>Marcar todo como realizado:</span>
+                                {grpOrders.map((o,oi)=>(
+                                  <button key={oi} onClick={()=>setSelected(o)}
+                                    style={{background:"linear-gradient(135deg,#fb923c,#c2410c)",color:"white",border:"none",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(194,65,12,.3)"}}>
+                                    📦 {o.solicitante||o.responsable||o.id}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {isAdmin && isRealizado && (
+                              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",paddingTop:6,borderTop:"1.5px solid var(--border)"}}>
+                                <span style={{fontSize:".72rem",color:"var(--muted)",fontWeight:700}}>Marcar como recibido:</span>
+                                {grpOrders.map((o,oi)=>(
+                                  <button key={oi} onClick={()=>setSelected(o)}
+                                    style={{background:"linear-gradient(135deg,#22c55e,#15803d)",color:"white",border:"none",borderRadius:8,padding:"5px 12px",fontSize:".75rem",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(21,128,61,.3)"}}>
+                                    ✅ {o.solicitante||o.responsable||o.id}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           {isAdmin&&(
                             <div className="order-right">
