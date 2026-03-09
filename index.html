@@ -2940,38 +2940,113 @@ function App(){
               : <div className="orders-list">
               {filtered.length===0
                 ?<div className="empty-state"><span className="big">📭</span><p>Todavía no hay solicitudes</p><small>Pulsa "+ Nueva Solicitud" para crear la primera</small></div>
-                :filtered.map(o=>{
-                  const locked = !isAdmin && LOCKED_STATUSES.includes(o.status);
-                  return(
-                  <div className="order-card" key={o.id} onClick={()=>setSelected(o)}>
-                    <div className="order-card-left">
-                      <div className="order-meta">
-                        <span className="order-id">{o.idinete||o.id}</span>
-                        <StatusTag status={o.status}/>
-                        <CatTag cat={o.category}/>
-                        {isAdmin&&o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
-                        <span className="order-date">{fmt(o.date)}</span>
-                      </div>
-                      <div className="order-info">
-                        <span>Solicitante <b>{o.solicitante||o.responsable}</b></span>
-                        {o.responsable&&o.responsable!==(o.solicitante||"")&&<span style={{color:"#15803d",fontWeight:700}}>📞 Responsable <b>{o.responsable}</b></span>}
-                        <span>Proveedor <b>{o.proveedor}</b></span>
-                        <span>Artículos <b>{o.products.length}</b></span>
-                      </div>
-                      <div className="order-chips">
-                        {o.products.slice(0,3).map((p,i)=><span key={i} className="chip">{p.nombre}</span>)}
-                        {o.products.length>3&&<span className="chip">+{o.products.length-3} más</span>}
-                      </div>
-                    </div>
-                    {isAdmin&&(
-                      <div className="order-right">
-                        <div className="order-total-num">{eur(tot(o.products))}</div>
-                        <div className="order-total-lbl">total</div>
-                      </div>
-                    )}
-                  </div>
-                  );
-                })
+                :(()=>{
+                  // Agrupar pedidos del mismo proveedor+bloque cuando están en proceso/realizado/recibido
+                  const GROUPED_STATUSES = ["proceso","realizado","recibido"];
+                  const groups = [];
+                  const usedIds = new Set();
+                  filtered.forEach(o=>{
+                    if(usedIds.has(o.id)) return;
+                    if(GROUPED_STATUSES.includes(o.status)){
+                      const groupKey = (o.bloque||o.proveedor)+"__"+o.status;
+                      const siblings = filtered.filter(x=>
+                        !usedIds.has(x.id) &&
+                        x.id !== o.id &&
+                        GROUPED_STATUSES.includes(x.status) &&
+                        (x.bloque||x.proveedor) === (o.bloque||o.proveedor) &&
+                        x.status === o.status
+                      );
+                      if(siblings.length>0){
+                        const allInGroup = [o,...siblings];
+                        allInGroup.forEach(x=>usedIds.add(x.id));
+                        groups.push({type:"group", key:groupKey, orders:allInGroup});
+                      } else {
+                        usedIds.add(o.id);
+                        groups.push({type:"single", key:o.id, order:o});
+                      }
+                    } else {
+                      usedIds.add(o.id);
+                      groups.push({type:"single", key:o.id, order:o});
+                    }
+                  });
+                  return groups.map(entry=>{
+                    if(entry.type==="single"){
+                      const o = entry.order;
+                      return(
+                        <div className="order-card" key={o.id} onClick={()=>setSelected(o)}>
+                          <div className="order-card-left">
+                            <div className="order-meta">
+                              <span className="order-id">{o.idinete||o.id}</span>
+                              <StatusTag status={o.status}/>
+                              <CatTag cat={o.category}/>
+                              {isAdmin&&o.proyecto&&<span className="order-proj">📁 {o.proyecto}</span>}
+                              <span className="order-date">{fmt(o.date)}</span>
+                            </div>
+                            <div className="order-info">
+                              <span>Solicitante <b>{o.solicitante||o.responsable}</b></span>
+                              {o.responsable&&o.responsable!==(o.solicitante||"")&&<span style={{color:"#15803d",fontWeight:700}}>📞 Responsable <b>{o.responsable}</b></span>}
+                              <span>Proveedor <b>{o.proveedor}</b></span>
+                              <span>Artículos <b>{o.products.length}</b></span>
+                            </div>
+                            <div className="order-chips">
+                              {o.products.slice(0,3).map((p,i)=><span key={i} className="chip">{p.nombre}</span>)}
+                              {o.products.length>3&&<span className="chip">+{o.products.length-3} más</span>}
+                            </div>
+                          </div>
+                          {isAdmin&&(
+                            <div className="order-right">
+                              <div className="order-total-num">{eur(tot(o.products))}</div>
+                              <div className="order-total-lbl">total</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    } else {
+                      // Tarjeta agrupada: múltiples solicitudes del mismo proveedor
+                      const grpOrders = entry.orders;
+                      const firstO = grpOrders[0];
+                      const totalProds = grpOrders.reduce((s,o)=>s+o.products.length,0);
+                      const totalEur = grpOrders.reduce((s,o)=>s+tot(o.products),0);
+                      const responsable = firstO.responsable;
+                      const allProds = grpOrders.flatMap(o=>o.products.map(p=>({...p, _solicitante: o.solicitante||o.responsable})));
+                      return(
+                        <div className="order-card" key={entry.key} style={{cursor:"default"}}>
+                          <div className="order-card-left" style={{flex:1}}>
+                            {/* Cabecera del pedido agrupado */}
+                            <div className="order-meta">
+                              <span className="order-id">🏪 {firstO.proveedor}</span>
+                              <StatusTag status={firstO.status}/>
+                              <CatTag cat={firstO.category}/>
+                              {isAdmin&&firstO.proyecto&&<span className="order-proj">📁 {firstO.proyecto}</span>}
+                              <span className="order-date">{fmt(firstO.date)}</span>
+                            </div>
+                            <div className="order-info" style={{marginBottom:8}}>
+                              {responsable&&<span style={{color:"#15803d",fontWeight:700}}>👤 Responsable pedido <b>{responsable}</b></span>}
+                              <span>Proveedor <b>{firstO.proveedor}</b></span>
+                              <span>Artículos <b>{totalProds}</b> de <b>{grpOrders.length}</b> solicitudes</span>
+                            </div>
+                            {/* Items con solicitante por línea */}
+                            <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:4}}>
+                              {allProds.map((p,i)=>(
+                                <div key={i} style={{display:"flex",alignItems:"center",gap:8,background:"#f8f7ff",borderRadius:8,padding:"5px 10px",border:"1.5px solid #ede9fe"}}>
+                                  <span style={{fontWeight:800,fontSize:".82rem",color:"var(--navy)",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
+                                  {p.unidades&&p.unidades!==1&&<span style={{fontSize:".72rem",color:"var(--muted)",fontWeight:700,whiteSpace:"nowrap"}}>×{p.unidades}</span>}
+                                  <span style={{fontSize:".72rem",background:"#ede9fe",color:"var(--accent)",borderRadius:20,padding:"2px 8px",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>👤 {p._solicitante}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {isAdmin&&(
+                            <div className="order-right">
+                              <div className="order-total-num">{eur(totalEur)}</div>
+                              <div className="order-total-lbl">total</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                  });
+                })()
               }
             </div>}
           </>
